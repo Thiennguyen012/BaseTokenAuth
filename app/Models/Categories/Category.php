@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Models\Categories;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Category extends Model
+{
+    protected $fillable = [
+        'category_name',
+        'description',
+    ];
+}

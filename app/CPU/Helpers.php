@@ -69,7 +69,6 @@ class Helpers
         if (is_null($value)) return '';
         return trim((string)$value);
     }
-
 }
 
 // if (!function_exists('translate')) {
@@ -78,6 +77,3 @@ class Helpers
 //         return __('messages.' . $key);
 //     }
 // }
-
-
-

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\Category\CategoryInterface;
+use App\Repositories\Category\CategoryRepository;
 use App\Repositories\RefreshToken\RefreshTokenInterface;
 use App\Repositories\RefreshToken\RefreshTokenRepository;
 use App\Repositories\User\UserInterface;
@@ -15,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(CategoryInterface::class, CategoryRepository::class);
         $this->app->bind(UserInterface::class, UserRepository::class);
         $this->app->bind(RefreshTokenInterface::class, RefreshTokenRepository::class);
     }

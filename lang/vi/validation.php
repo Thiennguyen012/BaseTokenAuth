@@ -2,6 +2,19 @@
 
 return [
     'custom' => [
+        'category' => [
+            'category_name' => [
+                'required' => 'Tên danh mục là bắt buộc',
+                'string' => 'Tên danh mục phải là chuỗi ký tự',
+                'max' => 'Tên danh mục không được vượt quá 100 ký tự',
+                'unique' => 'Tên danh mục đã tồn tại',
+            ],
+            'description' => [
+                'string' => 'Mô tả phải là chuỗi ký tự',
+                'max' => 'Mô tả không được vượt quá 255 ký tự',
+            ],
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+        ],
         'name' => [
             'string' => 'Tên phải là chuỗi ký tự.',
             'max' => 'Tên không được vượt quá 255 ký tự.',
