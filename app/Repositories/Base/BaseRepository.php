@@ -31,7 +31,7 @@ abstract class BaseRepository implements BaseInterface
         return $this->model = app($this->model());
     }
 
-    protected function query(array $where = [], array $orderBy = [], array $select = [], array $with = []): Builder
+    public function query(array $where = [], array $orderBy = [], array $select = [], array $with = []): Builder
     {
         $query = $this->model->newQuery();
 
@@ -322,7 +322,7 @@ abstract class BaseRepository implements BaseInterface
                         break;
                     case 'in':
                         if ($condition['key'] == '_id') {
-                            $condition['value'] = array_map(static fn ($id) => new ObjectId($id), $condition['value']);
+                            $condition['value'] = array_map(static fn($id) => new ObjectId($id), $condition['value']);
                         }
                         $match[] = [$condition['key'] => ['$in' => $condition['value']]];
                         break;

@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 class RefreshTokenRepository extends BaseRepository implements RefreshTokenInterface
 {
-    public function model()
+    public function model(): string
     {
         return RefreshToken::class;
     }

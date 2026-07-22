@@ -13,9 +13,8 @@ class UserRepository extends BaseRepository implements UserInterface
 
     const IS_SUPER_ADMIN = 1;
 
-    public function model()
+    public function model(): string
     {
-        // TODO: Implement model() method.
         return User::class;
     }
 
