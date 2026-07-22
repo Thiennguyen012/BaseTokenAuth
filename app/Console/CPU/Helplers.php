@@ -17,22 +17,22 @@ class Helpers
     {
         return str_ireplace(['\'', '"', ',', ';', '<', '>', '?'], ' ', preg_replace('/\s\s+/', ' ', $str));
     }
+    // Dùng cho RBAC
+    // public static function permission_check($permission_name): bool
+    // {
+    //     $user = Auth::user();
+    //     if (!$user) {
+    //         return false;
+    //     }
 
-    public static function permission_check($permission_name): bool
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return false;
-        }
+    //     if ($user->is_super_admin == UserRepository::IS_SUPER_ADMIN) {
+    //         return true;
+    //     }
 
-        if ($user->is_super_admin == UserRepository::IS_SUPER_ADMIN) {
-            return true;
-        }
-
-        return $user->roles()->whereHas('permissions', function ($query) use ($permission_name) {
-            $query->where('permission_name', $permission_name);
-        })->exists();
-    }
+    //     return $user->roles()->whereHas('permissions', function ($query) use ($permission_name) {
+    //         $query->where('permission_name', $permission_name);
+    //     })->exists();
+    // }
     static function getExtension($ex)
     {
         $ex_img = ['png', 'jpg', 'jpeg'];
