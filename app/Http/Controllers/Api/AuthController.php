@@ -122,13 +122,13 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $user->load('roles.permissions');
-        $permissions = $user->roles
-            ->flatMap(function ($role) {
-                return $role->permissions;
-            })
-            ->unique('id')
-            ->values();
+        // $user->load('roles.permissions');
+        // $permissions = $user->roles
+        //     ->flatMap(function ($role) {
+        //         return $role->permissions;
+        //     })
+        //     ->unique('id')
+        //     ->values();
         $payload = $user->toArray();
         unset($payload['roles']);
 
@@ -137,7 +137,7 @@ class AuthController extends Controller
             'message' => __('messages.common.fetched', ['entity' => __('messages.entities.profile')]),
             'data' => [
                 ...$payload,
-                'permissions' => $permissions,
+                // 'permissions' => $permissions,
             ]
         ]);
     }
