@@ -12,6 +12,7 @@ use App\Traits\ValidatesRequestData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
 class ProductController extends Controller
 {
@@ -24,6 +25,18 @@ class ProductController extends Controller
         $this->productService = $productService;
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/products",
+     *     summary="Danh sách sản phẩm",
+     *     tags={"Products"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công"),
+     *     @OA\Response(response=401, description="Chưa xác thực")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->query('per_page', Helpers::LIMIT_PER_PAGE);
@@ -45,6 +58,24 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/products",
+     *     summary="Tạo sản phẩm kèm ảnh",
+     *     tags={"Products"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(required=true, @OA\MediaType(
+     *         mediaType="multipart/form-data",
+     *         @OA\Schema(ref="#/components/schemas/StoreProductRequest")
+     *     )),
+     *     @OA\Response(response=201, description="Đã tạo", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=201),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
+     *     )),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function store(StoreProductRequest $request): JsonResponse
     {
         try {
@@ -60,6 +91,21 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/products/{id}",
+     *     summary="Chi tiết sản phẩm",
+     *     tags={"Products"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function show(string $id): JsonResponse
     {
         $product = $this->productService->find($id);
@@ -78,6 +124,27 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/products/{id}",
+     *     summary="Cập nhật sản phẩm kèm ảnh",
+     *     description="Gửi multipart/form-data bằng POST và đặt _method=PUT.",
+     *     tags={"Products"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(required=true, @OA\MediaType(
+     *         mediaType="multipart/form-data",
+     *         @OA\Schema(ref="#/components/schemas/UpdateProductRequest")
+     *     )),
+     *     @OA\Response(response=200, description="Đã cập nhật", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại"),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function update(UpdateProductRequest $request, string $id): JsonResponse
     {
         try {
@@ -102,6 +169,17 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/products/{id}",
+     *     summary="Xóa sản phẩm",
+     *     tags={"Products"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Đã xóa"),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function destroy(string $id): JsonResponse
     {
         try {

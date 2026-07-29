@@ -1,0 +1,1724 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "BE Nhựa API",
+        "description": "API quản lý sản phẩm và biến thể sản phẩm",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/",
+            "description": "Current server"
+        }
+    ],
+    "paths": {
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Đăng nhập",
+                "operationId": "dd51a484b7fa0f97c7680fdbde14cf5f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "Postman"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đăng nhập thành công"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Làm mới access token",
+                "operationId": "30c20c52f5f72828d8c531fd7c9ea3e7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Làm mới token thành công"
+                    },
+                    "422": {
+                        "description": "Refresh token không hợp lệ"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Đăng xuất",
+                "operationId": "df9bdc6c7a6d9f20b983526b2ec0f698",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refresh_token": {
+                                        "description": "Refresh token cần thu hồi",
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đăng xuất thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Lấy thông tin người dùng hiện tại",
+                "operationId": "b5de204f5e452ef51327c691aa99e77c",
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin người dùng thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/product-variants": {
+            "get": {
+                "tags": [
+                    "Product Variants"
+                ],
+                "summary": "Danh sách biến thể sản phẩm",
+                "operationId": "3863e44e732ae5f66e7862065318ef37",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Product Variants"
+                ],
+                "summary": "Tạo biến thể sản phẩm kèm ảnh",
+                "operationId": "faa10e0879e908667a12684e81e5cf5a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreProductVariantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductVariantResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Tổ hợp không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/product-variants/{id}": {
+            "get": {
+                "tags": [
+                    "Product Variants"
+                ],
+                "summary": "Chi tiết biến thể sản phẩm",
+                "operationId": "d6cae9667e44c10c3afefa1cbbc740c8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductVariantResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Product Variants"
+                ],
+                "summary": "Cập nhật biến thể kèm ảnh",
+                "description": "Gửi multipart/form-data bằng POST và đặt _method=PUT.",
+                "operationId": "27d83bfc69ded96cf4faf5d524bf7593",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProductVariantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductVariantResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Tổ hợp không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Product Variants"
+                ],
+                "summary": "Xóa biến thể sản phẩm",
+                "operationId": "c0eb6752fecd75422c926763266afa4b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Danh sách sản phẩm",
+                "operationId": "16151fd150adb5c53ccb365b18872b88",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Tạo sản phẩm kèm ảnh",
+                "operationId": "39e039020db35ef73fb90039e9a2e0fb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/products/{id}": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Chi tiết sản phẩm",
+                "operationId": "e8be9e42b1e86fa64b22150625f74dbd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Cập nhật sản phẩm kèm ảnh",
+                "description": "Gửi multipart/form-data bằng POST và đặt _method=PUT.",
+                "operationId": "5538a3965ce7bdd5a876cc61568299cd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProductRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Xóa sản phẩm",
+                "operationId": "4a840887f9748a17d79fe0af9ab29131",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/variant-groups": {
+            "get": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Danh sách nhóm biến thể",
+                "operationId": "5e805b0c79871e46ccc69b6ceb9c1100",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Tạo nhóm biến thể",
+                "operationId": "d803a89e403d38064eda666c424f0655",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreVariantGroupRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantGroupResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/variant-groups/{id}": {
+            "get": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Chi tiết nhóm biến thể",
+                "operationId": "1f8a1b006400fe613dfb03cbb93b816b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantGroupResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Cập nhật nhóm biến thể",
+                "operationId": "a3410c05b5a27c14bcf8c1bdff38dfe4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateVariantGroupRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantGroupResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Xóa nhóm biến thể",
+                "operationId": "2e7fe85c1a2a057203b1c14532d09449",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/variant-options": {
+            "get": {
+                "tags": [
+                    "Variant Options"
+                ],
+                "summary": "Danh sách giá trị biến thể",
+                "operationId": "7640f9b76f2fc5fdbb1204651aa2f681",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "variant_group_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Variant Options"
+                ],
+                "summary": "Tạo giá trị biến thể",
+                "operationId": "6555c3321249ae02fec94cbc99f200a9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreVariantOptionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantOptionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/variant-options/{id}": {
+            "get": {
+                "tags": [
+                    "Variant Options"
+                ],
+                "summary": "Chi tiết giá trị biến thể",
+                "operationId": "5d7cac23e897da3d280f51470abdca00",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantOptionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Variant Options"
+                ],
+                "summary": "Cập nhật giá trị biến thể",
+                "operationId": "81e3be6229077cba87d6c39a0aeae13e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateVariantOptionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/VariantOptionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Variant Options"
+                ],
+                "summary": "Xóa giá trị biến thể",
+                "operationId": "beded209efba32474ce376c9133a8458",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "StoreProductVariantRequest": {
+                "required": [
+                    "product_id",
+                    "sku",
+                    "option_ids"
+                ],
+                "properties": {
+                    "product_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "sku": {
+                        "type": "string",
+                        "example": "AT-RED-M",
+                        "maxLength": 100
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "stock": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "option_ids[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "images[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "maxItems": 10
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateProductVariantRequest": {
+                "properties": {
+                    "_method": {
+                        "type": "string",
+                        "example": "PUT"
+                    },
+                    "product_id": {
+                        "type": "integer"
+                    },
+                    "sku": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "decimal",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "stock": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "option_ids[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "images[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "maxItems": 10
+                    }
+                },
+                "type": "object"
+            },
+            "StoreProductRequest": {
+                "required": [
+                    "product_name"
+                ],
+                "properties": {
+                    "product_name": {
+                        "type": "string",
+                        "example": "Áo thun basic",
+                        "maxLength": 255
+                    },
+                    "sku": {
+                        "type": "string",
+                        "example": "AT-001",
+                        "nullable": true,
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": true
+                    },
+                    "is_featured": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": false
+                    },
+                    "variant_groups": {
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "variant_group_id"
+                            ],
+                            "properties": {
+                                "variant_group_id": {
+                                    "type": "integer"
+                                },
+                                "is_required": {
+                                    "type": "boolean"
+                                },
+                                "sort_order": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "images[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "maxItems": 10
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateProductRequest": {
+                "properties": {
+                    "_method": {
+                        "type": "string",
+                        "example": "PUT"
+                    },
+                    "product_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "sku": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 100
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "is_featured": {
+                        "type": "boolean"
+                    },
+                    "variant_groups": {
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "variant_group_id"
+                            ],
+                            "properties": {
+                                "variant_group_id": {
+                                    "type": "integer"
+                                },
+                                "is_required": {
+                                    "type": "boolean"
+                                },
+                                "sort_order": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "images[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "maxItems": 10
+                    }
+                },
+                "type": "object"
+            },
+            "StoreVariantGroupRequest": {
+                "required": [
+                    "group_code",
+                    "group_name"
+                ],
+                "properties": {
+                    "group_code": {
+                        "type": "string",
+                        "example": "color",
+                        "maxLength": 100
+                    },
+                    "group_name": {
+                        "type": "string",
+                        "example": "Màu sắc",
+                        "maxLength": 255
+                    },
+                    "option_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateVariantGroupRequest": {
+                "properties": {
+                    "group_code": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "group_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "option_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "StoreVariantOptionRequest": {
+                "required": [
+                    "variant_group_id",
+                    "option_code",
+                    "option_name"
+                ],
+                "properties": {
+                    "variant_group_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "option_code": {
+                        "type": "string",
+                        "example": "red",
+                        "maxLength": 100
+                    },
+                    "option_name": {
+                        "type": "string",
+                        "example": "Màu đỏ",
+                        "maxLength": 255
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateVariantOptionRequest": {
+                "properties": {
+                    "variant_group_id": {
+                        "type": "integer"
+                    },
+                    "option_code": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "option_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "FileResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "disk": {
+                        "type": "string",
+                        "example": "public"
+                    },
+                    "path": {
+                        "type": "string",
+                        "example": "products/1/image.jpg"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "image",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "product_name": {
+                        "type": "string"
+                    },
+                    "sku": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "is_featured": {
+                        "type": "boolean"
+                    },
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FileResource"
+                        }
+                    },
+                    "variant_groups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VariantGroupResource"
+                        }
+                    },
+                    "variants": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductVariantResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductVariantResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "product_id": {
+                        "type": "integer"
+                    },
+                    "sku": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "string",
+                        "example": "150000.00",
+                        "nullable": true
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FileResource"
+                        }
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VariantOptionResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UserResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "birthday": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "avatar": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "integer"
+                    },
+                    "is_super_admin": {
+                        "type": "boolean"
+                    },
+                    "role_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "VariantGroupResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "group_code": {
+                        "type": "string"
+                    },
+                    "group_name": {
+                        "type": "string"
+                    },
+                    "sort_order": {
+                        "description": "Chỉ có khi group thuộc product",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "is_required": {
+                        "description": "Chỉ có khi group thuộc product",
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VariantOptionResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "VariantOptionResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "variant_group_id": {
+                        "type": "integer"
+                    },
+                    "option_code": {
+                        "type": "string"
+                    },
+                    "option_name": {
+                        "type": "string"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "bearerFormat": "Bearer token",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth"
+        },
+        {
+            "name": "Products"
+        },
+        {
+            "name": "Variant Groups"
+        },
+        {
+            "name": "Variant Options"
+        },
+        {
+            "name": "Product Variants"
+        }
+    ]
+}

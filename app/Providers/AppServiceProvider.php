@@ -45,6 +45,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $isCachingConfig = $this->app->runningInConsole()
+            && in_array('config:cache', $_SERVER['argv'] ?? [], true);
+
+        if (!$isCachingConfig) {
+            config()->set(
+                'l5-swagger.defaults.scanOptions.analyser',
+                new \App\OpenApi\DocBlockAnalyser()
+            );
+        }
     }
 }

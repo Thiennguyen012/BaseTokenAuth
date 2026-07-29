@@ -7,7 +7,18 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="UpdateVariantOptionRequest",
+ *     @OA\Property(property="variant_group_id", type="integer"),
+ *     @OA\Property(property="option_code", type="string", maxLength=100),
+ *     @OA\Property(property="option_name", type="string", maxLength=255),
+ *     @OA\Property(property="sort_order", type="integer", minimum=0, nullable=true),
+ *     @OA\Property(property="is_active", type="boolean", nullable=true)
+ * )
+ */
 class UpdateVariantOptionRequest extends FormRequest
 {
     public function authorize(): bool

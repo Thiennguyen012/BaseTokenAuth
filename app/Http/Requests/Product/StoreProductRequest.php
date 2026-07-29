@@ -5,7 +5,31 @@ namespace App\Http\Requests\Product;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="StoreProductRequest",
+ *     required={"product_name"},
+ *     @OA\Property(property="product_name", type="string", maxLength=255, example="Áo thun basic"),
+ *     @OA\Property(property="sku", type="string", maxLength=100, nullable=true, example="AT-001"),
+ *     @OA\Property(property="description", type="string", nullable=true),
+ *     @OA\Property(property="is_active", type="boolean", nullable=true, default=true),
+ *     @OA\Property(property="is_featured", type="boolean", nullable=true, default=false),
+ *     @OA\Property(
+ *         property="variant_groups",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             required={"variant_group_id"},
+ *             @OA\Property(property="variant_group_id", type="integer"),
+ *             @OA\Property(property="is_required", type="boolean"),
+ *             @OA\Property(property="sort_order", type="integer", minimum=0)
+ *         )
+ *     ),
+ *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
+ * )
+ */
 class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool

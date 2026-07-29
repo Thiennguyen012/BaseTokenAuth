@@ -4,7 +4,24 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="ProductResource",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="product_name", type="string"),
+ *     @OA\Property(property="sku", type="string", nullable=true),
+ *     @OA\Property(property="description", type="string", nullable=true),
+ *     @OA\Property(property="is_active", type="boolean"),
+ *     @OA\Property(property="is_featured", type="boolean"),
+ *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
+ *     @OA\Property(property="variant_groups", type="array", @OA\Items(ref="#/components/schemas/VariantGroupResource")),
+ *     @OA\Property(property="variants", type="array", @OA\Items(ref="#/components/schemas/ProductVariantResource")),
+ *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
+ * )
+ */
 class ProductResource extends JsonResource
 {
     /**

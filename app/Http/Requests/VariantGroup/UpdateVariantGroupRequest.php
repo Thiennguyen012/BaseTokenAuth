@@ -6,7 +6,16 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="UpdateVariantGroupRequest",
+ *     @OA\Property(property="group_code", type="string", maxLength=100),
+ *     @OA\Property(property="group_name", type="string", maxLength=255),
+ *     @OA\Property(property="option_ids", type="array", @OA\Items(type="integer"))
+ * )
+ */
 class UpdateVariantGroupRequest extends FormRequest
 {
     public function authorize(): bool

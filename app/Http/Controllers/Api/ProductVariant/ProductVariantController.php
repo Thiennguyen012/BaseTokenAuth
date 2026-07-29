@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Annotations as OA;
 
 class ProductVariantController extends Controller
 {
@@ -20,6 +21,19 @@ class ProductVariantController extends Controller
 
     public function __construct(protected ProductVariantService $productVariantService) {}
 
+    /**
+     * @OA\Get(
+     *     path="/api/product-variants",
+     *     summary="Danh sách biến thể sản phẩm",
+     *     tags={"Product Variants"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="product_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công"),
+     *     @OA\Response(response=401, description="Chưa xác thực")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->query('per_page', Helpers::LIMIT_PER_PAGE);
@@ -41,6 +55,24 @@ class ProductVariantController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/product-variants",
+     *     summary="Tạo biến thể sản phẩm kèm ảnh",
+     *     tags={"Product Variants"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(required=true, @OA\MediaType(
+     *         mediaType="multipart/form-data",
+     *         @OA\Schema(ref="#/components/schemas/StoreProductVariantRequest")
+     *     )),
+     *     @OA\Response(response=201, description="Đã tạo", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=201),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductVariantResource")
+     *     )),
+     *     @OA\Response(response=422, description="Tổ hợp không hợp lệ")
+     * )
+     */
     public function store(StoreProductVariantRequest $request): JsonResponse
     {
         try {
@@ -58,6 +90,21 @@ class ProductVariantController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/product-variants/{id}",
+     *     summary="Chi tiết biến thể sản phẩm",
+     *     tags={"Product Variants"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductVariantResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function show(string $id): JsonResponse
     {
         $variant = $this->productVariantService->find($id);
@@ -76,6 +123,27 @@ class ProductVariantController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/product-variants/{id}",
+     *     summary="Cập nhật biến thể kèm ảnh",
+     *     description="Gửi multipart/form-data bằng POST và đặt _method=PUT.",
+     *     tags={"Product Variants"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(@OA\MediaType(
+     *         mediaType="multipart/form-data",
+     *         @OA\Schema(ref="#/components/schemas/UpdateProductVariantRequest")
+     *     )),
+     *     @OA\Response(response=200, description="Đã cập nhật", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/ProductVariantResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại"),
+     *     @OA\Response(response=422, description="Tổ hợp không hợp lệ")
+     * )
+     */
     public function update(UpdateProductVariantRequest $request, string $id): JsonResponse
     {
         try {
@@ -106,6 +174,17 @@ class ProductVariantController extends Controller
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/product-variants/{id}",
+     *     summary="Xóa biến thể sản phẩm",
+     *     tags={"Product Variants"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Đã xóa"),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function destroy(string $id): JsonResponse
     {
         try {

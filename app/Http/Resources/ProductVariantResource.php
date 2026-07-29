@@ -4,7 +4,23 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="ProductVariantResource",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="sku", type="string"),
+ *     @OA\Property(property="price", type="string", nullable=true, example="150000.00"),
+ *     @OA\Property(property="stock", type="integer"),
+ *     @OA\Property(property="is_active", type="boolean"),
+ *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
+ *     @OA\Property(property="options", type="array", @OA\Items(ref="#/components/schemas/VariantOptionResource")),
+ *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
+ * )
+ */
 class ProductVariantResource extends JsonResource
 {
     public function toArray(Request $request): array

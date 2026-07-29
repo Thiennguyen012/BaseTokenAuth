@@ -5,7 +5,21 @@ namespace App\Http\Requests\ProductVariant;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="StoreProductVariantRequest",
+ *     required={"product_id","sku","option_ids"},
+ *     @OA\Property(property="product_id", type="integer", example=1),
+ *     @OA\Property(property="sku", type="string", maxLength=100, example="AT-RED-M"),
+ *     @OA\Property(property="price", type="number", format="decimal", minimum=0, nullable=true),
+ *     @OA\Property(property="stock", type="integer", minimum=0, nullable=true),
+ *     @OA\Property(property="is_active", type="boolean", nullable=true),
+ *     @OA\Property(property="option_ids[]", type="array", @OA\Items(type="integer")),
+ *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
+ * )
+ */
 class StoreProductVariantRequest extends FormRequest
 {
     public function authorize(): bool

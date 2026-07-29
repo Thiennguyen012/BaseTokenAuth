@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Services\User\UserAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
 class AuthController extends Controller
 {
@@ -19,6 +20,21 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/auth/login",
+     *     summary="Đăng nhập",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"email","password"},
+     *         @OA\Property(property="email", type="string", format="email", example="admin@example.com"),
+     *         @OA\Property(property="password", type="string", format="password"),
+     *         @OA\Property(property="device_name", type="string", example="Postman")
+     *     )),
+     *     @OA\Response(response=200, description="Đăng nhập thành công"),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -59,6 +75,19 @@ class AuthController extends Controller
     //     ], Response::HTTP_CREATED);
     // }
 
+    /**
+     * @OA\Post(
+     *     path="/api/auth/refresh",
+     *     summary="Làm mới access token",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"refresh_token"},
+     *         @OA\Property(property="refresh_token", type="string")
+     *     )),
+     *     @OA\Response(response=200, description="Làm mới token thành công"),
+     *     @OA\Response(response=422, description="Refresh token không hợp lệ")
+     * )
+     */
     public function refresh(Request $request)
     {
         $request->validate([
@@ -81,6 +110,28 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/auth/logout",
+     *     summary="Đăng xuất",
+     *     tags={"Auth"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="refresh_token",
+     *                 type="string",
+     *                 nullable=true,
+     *                 description="Refresh token cần thu hồi"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Đăng xuất thành công"),
+     *     @OA\Response(response=401, description="Chưa xác thực"),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function logout(Request $request)
     {
         $request->validate([
@@ -119,6 +170,24 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/auth/me",
+     *     summary="Lấy thông tin người dùng hiện tại",
+     *     tags={"Auth"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+ *         response=200,
+ *         description="Lấy thông tin người dùng thành công",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="status_code", type="integer", example=200),
+ *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="data", ref="#/components/schemas/UserResource")
+ *         )
+     *     ),
+     *     @OA\Response(response=401, description="Chưa xác thực")
+     * )
+     */
     public function me(Request $request)
     {
         $user = $request->user();

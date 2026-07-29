@@ -4,7 +4,21 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="VariantGroupResource",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="group_code", type="string"),
+ *     @OA\Property(property="group_name", type="string"),
+ *     @OA\Property(property="sort_order", type="integer", nullable=true, description="Chỉ có khi group thuộc product"),
+ *     @OA\Property(property="is_required", type="boolean", nullable=true, description="Chỉ có khi group thuộc product"),
+ *     @OA\Property(property="options", type="array", @OA\Items(ref="#/components/schemas/VariantOptionResource")),
+ *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
+ * )
+ */
 class VariantGroupResource extends JsonResource
 {
     public function toArray(Request $request): array

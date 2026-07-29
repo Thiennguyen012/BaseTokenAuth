@@ -5,7 +5,17 @@ namespace App\Http\Requests\VariantGroup;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="StoreVariantGroupRequest",
+ *     required={"group_code","group_name"},
+ *     @OA\Property(property="group_code", type="string", maxLength=100, example="color"),
+ *     @OA\Property(property="group_name", type="string", maxLength=255, example="Màu sắc"),
+ *     @OA\Property(property="option_ids", type="array", nullable=true, @OA\Items(type="integer"))
+ * )
+ */
 class StoreVariantGroupRequest extends FormRequest
 {
     public function authorize(): bool

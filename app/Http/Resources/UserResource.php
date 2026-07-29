@@ -4,7 +4,25 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="UserResource",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="email", type="string", format="email"),
+ *     @OA\Property(property="phone", type="string", nullable=true),
+ *     @OA\Property(property="birthday", type="string", format="date", nullable=true),
+ *     @OA\Property(property="address", type="string", nullable=true),
+ *     @OA\Property(property="avatar", type="string", nullable=true),
+ *     @OA\Property(property="status", type="integer"),
+ *     @OA\Property(property="is_super_admin", type="boolean"),
+ *     @OA\Property(property="role_ids", type="array", @OA\Items(type="integer")),
+ *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
+ * )
+ */
 class UserResource extends JsonResource
 {
     /**

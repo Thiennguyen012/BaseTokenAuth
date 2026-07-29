@@ -12,6 +12,7 @@ use App\Traits\ValidatesRequestData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use OpenApi\Annotations as OA;
 
 class VariantGroupController extends Controller
 {
@@ -19,6 +20,18 @@ class VariantGroupController extends Controller
 
     public function __construct(protected VariantGroupService $variantGroupService) {}
 
+    /**
+     * @OA\Get(
+     *     path="/api/variant-groups",
+     *     summary="Danh sách nhóm biến thể",
+     *     tags={"Variant Groups"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công"),
+     *     @OA\Response(response=401, description="Chưa xác thực")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->query('per_page', Helpers::LIMIT_PER_PAGE);
@@ -40,6 +53,21 @@ class VariantGroupController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/variant-groups",
+     *     summary="Tạo nhóm biến thể",
+     *     tags={"Variant Groups"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/StoreVariantGroupRequest")),
+     *     @OA\Response(response=201, description="Đã tạo", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=201),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/VariantGroupResource")
+     *     )),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function store(StoreVariantGroupRequest $request): JsonResponse
     {
         try {
@@ -55,6 +83,21 @@ class VariantGroupController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/variant-groups/{id}",
+     *     summary="Chi tiết nhóm biến thể",
+     *     tags={"Variant Groups"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/VariantGroupResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function show(string $id): JsonResponse
     {
         $variantGroup = $this->variantGroupService->find($id);
@@ -73,6 +116,23 @@ class VariantGroupController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/variant-groups/{id}",
+     *     summary="Cập nhật nhóm biến thể",
+     *     tags={"Variant Groups"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(@OA\JsonContent(ref="#/components/schemas/UpdateVariantGroupRequest")),
+     *     @OA\Response(response=200, description="Đã cập nhật", @OA\JsonContent(
+     *         @OA\Property(property="status_code", type="integer", example=200),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", ref="#/components/schemas/VariantGroupResource")
+     *     )),
+     *     @OA\Response(response=404, description="Không tồn tại"),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
     public function update(UpdateVariantGroupRequest $request, string $id): JsonResponse
     {
         try {
@@ -97,6 +157,17 @@ class VariantGroupController extends Controller
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/variant-groups/{id}",
+     *     summary="Xóa nhóm biến thể",
+     *     tags={"Variant Groups"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Đã xóa"),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
     public function destroy(string $id): JsonResponse
     {
         try {

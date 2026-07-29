@@ -6,7 +6,21 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Schema(
+ *     schema="UpdateProductVariantRequest",
+ *     @OA\Property(property="_method", type="string", example="PUT"),
+ *     @OA\Property(property="product_id", type="integer"),
+ *     @OA\Property(property="sku", type="string", maxLength=100),
+ *     @OA\Property(property="price", type="number", format="decimal", minimum=0, nullable=true),
+ *     @OA\Property(property="stock", type="integer", minimum=0, nullable=true),
+ *     @OA\Property(property="is_active", type="boolean", nullable=true),
+ *     @OA\Property(property="option_ids[]", type="array", @OA\Items(type="integer")),
+ *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
+ * )
+ */
 class UpdateProductVariantRequest extends FormRequest
 {
     public function authorize(): bool
