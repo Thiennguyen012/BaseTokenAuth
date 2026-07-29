@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class VariantGroupResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'group_code' => $this->group_code,
+            'group_name' => $this->group_name,
+            'sort_order' => $this->whenPivotLoaded('product_variant_groups', fn () => $this->pivot->sort_order),
+            'is_required' => $this->whenPivotLoaded('product_variant_groups', fn () => (bool) $this->pivot->is_required),
+            'options' => $this->whenLoaded('options', fn () => VariantOptionResource::collection($this->options)),
+            'created_at' => optional($this->created_at)->toDateTimeString(),
+            'updated_at' => optional($this->updated_at)->toDateTimeString(),
+        ];
+    }
+}

@@ -4,6 +4,11 @@ return [
     'success' => 'Thành công',
     'entities' => [
         'category' => 'Danh mục',
+        'product' => 'Sản phẩm',
+        'variant_group' => 'Nhóm biến thể',
+        'variant_option' => 'Giá trị biến thể',
+        'product_variant' => 'Biến thể sản phẩm',
+        'product_variant_value' => 'Giá trị biến thể sản phẩm',
         'role' => 'Vai trò',
         'user' => 'Người dùng',
         'flashcard' => 'Flashcard',

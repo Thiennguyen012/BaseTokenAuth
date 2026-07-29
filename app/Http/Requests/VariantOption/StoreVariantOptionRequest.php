@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Requests\VariantOption;
+
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
+
+class StoreVariantOptionRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        $variantGroupId = $this->input('variant_group_id');
+
+        return [
+            'variant_group_id' => 'required|exists:variant_groups,id',
+            'option_code' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('variant_options', 'option_code')->where(fn($query) => $query->where('variant_group_id', $variantGroupId)),
+            ],
+            'option_name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'variant_group_id.required' => __('validation.custom.variant_option.variant_group_id.required'),
+            'variant_group_id.exists' => __('validation.custom.variant_option.variant_group_id.exists'),
+            'option_code.required' => __('validation.custom.variant_option.option_code.required'),
+            'option_code.string' => __('validation.custom.variant_option.option_code.string'),
+            'option_code.max' => __('validation.custom.variant_option.option_code.max'),
+            'option_code.unique' => __('validation.custom.variant_option.option_code.unique'),
+            'option_name.required' => __('validation.custom.variant_option.option_name.required'),
+            'option_name.string' => __('validation.custom.variant_option.option_name.string'),
+            'option_name.max' => __('validation.custom.variant_option.option_name.max'),
+        ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        $response = response()->json([
+            'status_code' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            'message' => __('validation.custom.variant_option.invalid_data'),
+            'errors' => $validator->errors(),
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
+    }
+}

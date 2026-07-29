@@ -2,6 +2,93 @@
 
 return [
     'custom' => [
+        'variant_group' => [
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+            'group_code' => [
+                'required' => 'Mã nhóm biến thể là bắt buộc',
+                'string' => 'Mã nhóm biến thể phải là chuỗi ký tự',
+                'max' => 'Mã nhóm biến thể không được vượt quá 100 ký tự',
+                'unique' => 'Mã nhóm biến thể đã tồn tại',
+            ],
+            'group_name' => [
+                'required' => 'Tên nhóm biến thể là bắt buộc',
+                'string' => 'Tên nhóm biến thể phải là chuỗi ký tự',
+                'max' => 'Tên nhóm biến thể không được vượt quá 255 ký tự',
+            ],
+            'sort_order' => [
+                'integer' => 'Thứ tự phải là số nguyên',
+                'min' => 'Thứ tự không được nhỏ hơn 0',
+            ],
+        ],
+        'variant_option' => [
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+            'variant_group_id' => [
+                'required' => 'Nhóm biến thể là bắt buộc',
+                'exists' => 'Nhóm biến thể không tồn tại',
+            ],
+            'option_code' => [
+                'required' => 'Mã giá trị biến thể là bắt buộc',
+                'string' => 'Mã giá trị biến thể phải là chuỗi ký tự',
+                'max' => 'Mã giá trị biến thể không được vượt quá 100 ký tự',
+                'unique' => 'Mã giá trị biến thể đã tồn tại trong nhóm này',
+            ],
+            'option_name' => [
+                'required' => 'Tên giá trị biến thể là bắt buộc',
+                'string' => 'Tên giá trị biến thể phải là chuỗi ký tự',
+                'max' => 'Tên giá trị biến thể không được vượt quá 255 ký tự',
+            ],
+        ],
+        'product_variant' => [
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+            'product_id' => [
+                'required' => 'Sản phẩm là bắt buộc',
+                'exists' => 'Sản phẩm không tồn tại',
+            ],
+            'sku' => [
+                'string' => 'SKU phải là chuỗi ký tự',
+                'max' => 'SKU không được vượt quá 100 ký tự',
+                'unique' => 'SKU đã tồn tại',
+            ],
+            'price' => [
+                'numeric' => 'Giá phải là số',
+                'min' => 'Giá không được nhỏ hơn 0',
+            ],
+            'stock' => [
+                'integer' => 'Tồn kho phải là số nguyên',
+                'min' => 'Tồn kho không được nhỏ hơn 0',
+            ],
+        ],
+        'product_variant_value' => [
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+            'product_variant_id' => [
+                'required' => 'Biến thể sản phẩm là bắt buộc',
+                'exists' => 'Biến thể sản phẩm không tồn tại',
+            ],
+            'variant_group_id' => [
+                'required' => 'Nhóm biến thể là bắt buộc',
+                'exists' => 'Nhóm biến thể không tồn tại',
+            ],
+            'variant_option_id' => [
+                'required' => 'Giá trị biến thể là bắt buộc',
+                'exists' => 'Giá trị biến thể không tồn tại hoặc không thuộc nhóm đã chọn',
+            ],
+        ],
+        'product' => [
+            'invalid_data' => 'Dữ liệu không hợp lệ',
+            'product_name' => [
+                'required' => 'Tên sản phẩm là bắt buộc',
+                'string' => 'Tên sản phẩm phải là chuỗi ký tự',
+                'max' => 'Tên sản phẩm không được vượt quá 255 ký tự',
+            ],
+            'sku' => [
+                'string' => 'SKU phải là chuỗi ký tự',
+                'max' => 'SKU không được vượt quá 100 ký tự',
+                'unique' => 'SKU đã tồn tại',
+            ],
+            'description' => [
+                'string' => 'Mô tả phải là chuỗi ký tự',
+            ],
+        ],
         'category' => [
             'category_name' => [
                 'required' => 'Tên danh mục là bắt buộc',
