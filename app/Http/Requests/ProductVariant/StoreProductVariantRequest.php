@@ -23,6 +23,8 @@ class StoreProductVariantRequest extends FormRequest
             'is_active' => 'nullable|boolean',
             'option_ids' => 'required|array',
             'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
+            'images' => 'sometimes|array|max:10',
+            'images.*' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120',
         ];
     }
 

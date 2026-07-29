@@ -5,12 +5,16 @@ namespace App\Services\ProductVariant;
 use App\Models\Products\Product;
 use App\Models\Variants\VariantOption;
 use App\Repositories\ProductVariant\ProductVariantInterface;
+use App\Services\File\FileService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ProductVariantService
 {
-    public function __construct(protected ProductVariantInterface $productVariantRepository) {}
+    public function __construct(
+        protected ProductVariantInterface $productVariantRepository,
+        protected FileService $fileService
+    ) {}
 
     public function paginate(int $limit = 10, string $search = '', ?int $productId = null)
     {
@@ -28,7 +32,7 @@ class ProductVariantService
             $where,
             ['id' => 'desc'],
             ['*'],
-            ['options.group'],
+            ['files', 'options.group'],
             $limit
         );
     }
@@ -39,7 +43,7 @@ class ProductVariantService
             ['id' => $id],
             [],
             ['*'],
-            ['options.group']
+            ['files', 'options.group']
         );
     }
 
@@ -48,8 +52,9 @@ class ProductVariantService
         return DB::transaction(function () use ($data) {
             $product = Product::query()->with('variantGroups')->lockForUpdate()->findOrFail($data['product_id']);
             $optionIds = $this->validateAndNormalizeOptions($product, $data['option_ids']);
+            $images = $data['images'] ?? [];
 
-            unset($data['option_ids']);
+            unset($data['option_ids'], $data['images']);
             $data['combination_key'] = hash('sha256', $optionIds->implode(':'));
 
             if ($product->variants()->where('combination_key', $data['combination_key'])->exists()) {
@@ -60,8 +65,9 @@ class ProductVariantService
 
             $variant = $this->productVariantRepository->create($data);
             $variant->options()->attach($optionIds->all());
+            $this->uploadImages($variant, $images);
 
-            return $variant->load('options.group');
+            return $variant->load(['files', 'options.group']);
         });
     }
 
@@ -74,6 +80,7 @@ class ProductVariantService
             $optionIds = array_key_exists('option_ids', $data)
                 ? $data['option_ids']
                 : $variant->options()->pluck('variant_options.id')->all();
+            $images = $data['images'] ?? [];
             $optionIds = $this->validateAndNormalizeOptions($product, $optionIds);
             $combinationKey = hash('sha256', $optionIds->implode(':'));
 
@@ -86,13 +93,14 @@ class ProductVariantService
                 ]);
             }
 
-            unset($data['option_ids']);
+            unset($data['option_ids'], $data['images']);
             $data['product_id'] = $productId;
             $data['combination_key'] = $combinationKey;
             $variant = $this->productVariantRepository->edit($variant, $data);
             $variant->options()->sync($optionIds->all());
+            $this->uploadImages($variant, $images);
 
-            return $variant->load('options.group');
+            return $variant->load(['files', 'options.group']);
         });
     }
 
@@ -138,5 +146,18 @@ class ProductVariantService
         }
 
         return $optionIds;
+    }
+
+    private function uploadImages($variant, array $images): void
+    {
+        if (empty($images)) {
+            return;
+        }
+
+        $this->fileService->uploadMany($images, $variant, [
+            'disk' => 'public',
+            'directory' => 'product-variants/' . $variant->id,
+            'type' => 'image',
+        ]);
     }
 }

@@ -16,6 +16,10 @@ class ProductVariantResource extends JsonResource
             'price' => $this->price,
             'stock' => $this->stock,
             'is_active' => $this->is_active,
+            'images' => $this->whenLoaded(
+                'files',
+                fn () => FileResource::collection($this->files->where('type', 'image')->values())
+            ),
             'options' => $this->whenLoaded('options', fn () => VariantOptionResource::collection($this->options)),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),

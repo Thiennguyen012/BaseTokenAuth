@@ -21,6 +21,10 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
+            'images' => $this->whenLoaded(
+                'files',
+                fn () => FileResource::collection($this->files->where('type', 'image')->values())
+            ),
             'variant_groups' => $this->whenLoaded('variantGroups', fn () => VariantGroupResource::collection($this->variantGroups)),
             'variants' => $this->whenLoaded('variants', fn () => ProductVariantResource::collection($this->variants)),
             'created_at' => optional($this->created_at)->toDateTimeString(),

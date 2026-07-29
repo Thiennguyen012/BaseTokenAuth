@@ -4,6 +4,7 @@ namespace App\Models\ProductVariants;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\HasFiles;
 use App\Models\Products\Product;
 use App\Models\Variants\VariantOption;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ProductVariant extends Model
 {
-    use HasFactory;
+    use HasFactory, HasFiles;
 
     protected $fillable = [
         'product_id',
@@ -42,4 +43,5 @@ class ProductVariant extends Model
         return $this->belongsToMany(VariantOption::class, 'product_variant_values')
             ->withTimestamps();
     }
+
 }

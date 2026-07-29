@@ -34,6 +34,8 @@ class UpdateProductRequest extends FormRequest
             'variant_groups.*.variant_group_id' => 'required|integer|distinct|exists:variant_groups,id',
             'variant_groups.*.is_required' => 'sometimes|boolean',
             'variant_groups.*.sort_order' => 'sometimes|integer|min:0',
+            'images' => 'sometimes|array|max:10',
+            'images.*' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120',
         ];
     }
 

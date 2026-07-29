@@ -3,13 +3,14 @@
 namespace App\Services\Product;
 
 use App\Repositories\Product\ProductInterface;
+use App\Services\File\FileService;
 use Illuminate\Support\Facades\DB;
 
 class ProductService
 {
     protected $productRepository;
 
-    public function __construct(ProductInterface $productRepository)
+    public function __construct(ProductInterface $productRepository, protected FileService $fileService)
     {
         $this->productRepository = $productRepository;
     }
@@ -27,7 +28,7 @@ class ProductService
             ];
         }
 
-        return $this->productRepository->paginate($where, $orderBy, ['*'], ['variantGroups.options', 'variants.options.group'], $limit);
+        return $this->productRepository->paginate($where, $orderBy, ['*'], ['files', 'variantGroups.options', 'variants.options.group'], $limit);
     }
 
     public function getAll($search = '')
@@ -49,18 +50,20 @@ class ProductService
     {
         $product = $this->productRepository->find($id);
 
-        return $product?->load(['variantGroups.options', 'variants.options.group']);
+        return $product?->load(['files', 'variantGroups.options', 'variants.options.group']);
     }
 
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
             $groups = $data['variant_groups'] ?? [];
-            unset($data['variant_groups']);
+            $images = $data['images'] ?? [];
+            unset($data['variant_groups'], $data['images']);
             $product = $this->productRepository->create($data);
             $this->syncVariantGroups($product, $groups);
+            $this->uploadImages($product, $images);
 
-            return $product->load(['variantGroups.options', 'variants.options.group']);
+            return $product->load(['files', 'variantGroups.options', 'variants.options.group']);
         });
     }
 
@@ -69,13 +72,15 @@ class ProductService
         return DB::transaction(function () use ($product, $data) {
             $hasGroups = array_key_exists('variant_groups', $data);
             $groups = $data['variant_groups'] ?? [];
-            unset($data['variant_groups']);
+            $images = $data['images'] ?? [];
+            unset($data['variant_groups'], $data['images']);
             $product = $this->productRepository->edit($product, $data);
             if ($hasGroups) {
                 $this->syncVariantGroups($product, $groups);
             }
+            $this->uploadImages($product, $images);
 
-            return $product->load(['variantGroups.options', 'variants.options.group']);
+            return $product->load(['files', 'variantGroups.options', 'variants.options.group']);
         });
     }
 
@@ -97,5 +102,18 @@ class ProductService
             ];
         }
         $product->variantGroups()->sync($sync);
+    }
+
+    private function uploadImages($product, array $images): void
+    {
+        if (empty($images)) {
+            return;
+        }
+
+        $this->fileService->uploadMany($images, $product, [
+            'disk' => 'public',
+            'directory' => 'products/' . $product->id,
+            'type' => 'image',
+        ]);
     }
 }
