@@ -63,4 +63,42 @@ class FileServiceTest extends TestCase
         Storage::disk('local')->assertMissing($file->path);
         $this->assertDatabaseMissing('files', ['id' => $file->id]);
     }
+
+    public function test_it_stores_an_external_video_as_a_polymorphic_file_record(): void
+    {
+        $product = Product::query()->create(['product_name' => 'T-shirt']);
+
+        $file = app(FileService::class)->createExternalUrl(
+            $product,
+            'https://www.youtube.com/watch?v=example',
+            ['sort_order' => 2]
+        );
+
+        $this->assertSame('https://www.youtube.com/watch?v=example', $file->external_url);
+        $this->assertSame('video', $file->type);
+        $this->assertSame(2, $file->sort_order);
+        $this->assertNull($file->path);
+        $this->assertSame(Product::class, $file->model_type);
+        $this->assertSame($product->id, $file->model_id);
+    }
+
+    public function test_it_replaces_a_file_without_changing_its_id_or_owner(): void
+    {
+        Storage::fake('public');
+        $product = Product::query()->create(['product_name' => 'T-shirt']);
+        $service = app(FileService::class);
+        $file = $service->upload(
+            UploadedFile::fake()->image('old.jpg'),
+            $product,
+            ['disk' => 'public', 'directory' => 'products/1']
+        );
+        $oldPath = $file->path;
+
+        $replaced = $service->replace($file, UploadedFile::fake()->image('new.png'));
+
+        $this->assertSame($file->id, $replaced->id);
+        $this->assertSame($product->id, $replaced->model_id);
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($replaced->path);
+    }
 }

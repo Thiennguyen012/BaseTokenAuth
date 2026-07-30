@@ -176,6 +176,647 @@
                 ]
             }
         },
+        "/api/files/{id}": {
+            "get": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Chi tiết file",
+                "operationId": "2d3e796aedfaf60cec6e763af54e8196",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Xóa file",
+                "operationId": "9659872c89b210e036468b1d43bb399a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Cập nhật metadata hoặc URL video",
+                "operationId": "19d712ad2e52008703e70eefcadee18d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "external_url": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "sort_order": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/files/{id}/replace": {
+            "post": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Thay nội dung file nhưng giữ nguyên ID và quan hệ",
+                "operationId": "38c28e0cf03701caccfaf4ec0417fd8b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "sort_order": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã thay file"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/page-contents": {
+            "get": {
+                "tags": [
+                    "Page Contents"
+                ],
+                "summary": "Danh sách nội dung trang",
+                "operationId": "9a859e5bf453efd10585dccc45db71fc",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Page Contents"
+                ],
+                "summary": "Tạo nội dung trang",
+                "operationId": "8cda6f536dd2badbb0dca401af938fde",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StorePageContentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageContentResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/page-contents/{id}": {
+            "get": {
+                "tags": [
+                    "Page Contents"
+                ],
+                "summary": "Chi tiết nội dung trang (theo ID hoặc Slug)",
+                "operationId": "ace6906b95e7f4c31700b887e73eb8e8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageContentResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Page Contents"
+                ],
+                "summary": "Cập nhật nội dung trang",
+                "operationId": "168d8c1634f8881f91c8c031dbb87221",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePageContentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageContentResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Page Contents"
+                ],
+                "summary": "Xóa nội dung trang",
+                "operationId": "a804b87941d707937e13f75ad898908a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/page-sections": {
+            "get": {
+                "tags": [
+                    "Page Sections"
+                ],
+                "summary": "Danh sách mục trang",
+                "operationId": "d0fa5bee91e6355f02ddf6ffcfe20fcb",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page_content_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Page Sections"
+                ],
+                "summary": "Tạo mục trang",
+                "operationId": "9b6802d4f2def346ffa801972be96e24",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StorePageSectionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageSectionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/page-sections/{id}": {
+            "get": {
+                "tags": [
+                    "Page Sections"
+                ],
+                "summary": "Chi tiết mục trang",
+                "operationId": "72ae71b8dc69c7a41794fa7f7ae95c80",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageSectionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Page Sections"
+                ],
+                "summary": "Cập nhật mục trang",
+                "operationId": "131dcae5a68f35e5cc933298ef2af633",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePageSectionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageSectionResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Page Sections"
+                ],
+                "summary": "Xóa mục trang",
+                "operationId": "3f6da43050aa7a2726936c6e28054088",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/product-variants": {
             "get": {
                 "tags": [
@@ -619,6 +1260,242 @@
                 ],
                 "summary": "Xóa sản phẩm",
                 "operationId": "4a840887f9748a17d79fe0af9ab29131",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/section-items": {
+            "get": {
+                "tags": [
+                    "Section Items"
+                ],
+                "summary": "Danh sách phần tử mục trang",
+                "operationId": "c58aed0095d61ffb20f0e44bbe8ef692",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page_section_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Section Items"
+                ],
+                "summary": "Tạo phần tử mục trang",
+                "operationId": "702b1b517c1d4ed7feaf270497f92b40",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreSectionItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 201
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/SectionItemResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/section-items/{id}": {
+            "get": {
+                "tags": [
+                    "Section Items"
+                ],
+                "summary": "Chi tiết phần tử mục trang",
+                "operationId": "7e3ad61debd86fc62ea8d57bcc8e4f3b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/SectionItemResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Section Items"
+                ],
+                "summary": "Cập nhật phần tử mục trang",
+                "operationId": "3412e4febdff1d9aa3ce2e1d91c0d5c8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSectionItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/SectionItemResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Section Items"
+                ],
+                "summary": "Xóa phần tử mục trang",
+                "operationId": "aae13abfe3b815eb20c84133ad59b0b9",
                 "parameters": [
                     {
                         "name": "id",
@@ -1112,6 +1989,130 @@
     },
     "components": {
         "schemas": {
+            "StorePageContentRequest": {
+                "required": [
+                    "slug",
+                    "title"
+                ],
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "example": "trang-chu",
+                        "maxLength": 255
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Trang chủ",
+                        "maxLength": 255
+                    }
+                },
+                "type": "object"
+            },
+            "UpdatePageContentRequest": {
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "example": "trang-gioi-thieu",
+                        "maxLength": 255
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Trang giới thiệu",
+                        "maxLength": 255
+                    }
+                },
+                "type": "object"
+            },
+            "StorePageSectionRequest": {
+                "required": [
+                    "page_content_id"
+                ],
+                "properties": {
+                    "page_content_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Mục Banner",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "example": "Mục hình ảnh chính",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Mô tả cho mục",
+                        "nullable": true
+                    },
+                    "files[]": {
+                        "description": "Danh sách các tệp tin ảnh hoặc video tải lên",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "video_urls[]": {
+                        "description": "Chuỗi JSON hoặc URL ngoài tùy chọn",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0,
+                        "default": 0
+                    }
+                },
+                "type": "object"
+            },
+            "UpdatePageSectionRequest": {
+                "properties": {
+                    "page_content_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "content": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "files[]": {
+                        "description": "Danh sách các tệp tin ảnh hoặc video tải lên",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "video_urls[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "StoreProductVariantRequest": {
                 "required": [
                     "product_id",
@@ -1324,6 +2325,95 @@
                 },
                 "type": "object"
             },
+            "StoreSectionItemRequest": {
+                "required": [
+                    "page_section_id"
+                ],
+                "properties": {
+                    "page_section_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Phần tử 1",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "content": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "files[]": {
+                        "description": "Danh sách các tệp tin ảnh hoặc video tải lên",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "video_urls[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "default": 0
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateSectionItemRequest": {
+                "properties": {
+                    "page_section_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "content": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "files[]": {
+                        "description": "Danh sách các tệp tin ảnh hoặc video tải lên",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "video_urls[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "StoreVariantGroupRequest": {
                 "required": [
                     "group_code",
@@ -1441,26 +2531,126 @@
                     },
                     "disk": {
                         "type": "string",
-                        "example": "public"
+                        "example": "public",
+                        "nullable": true
                     },
                     "path": {
                         "type": "string",
-                        "example": "products/1/image.jpg"
+                        "example": "products/1/image.jpg",
+                        "nullable": true
+                    },
+                    "external_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
                     },
                     "mime_type": {
                         "type": "string",
-                        "example": "image/jpeg"
+                        "example": "image/jpeg",
+                        "nullable": true
                     },
                     "size": {
                         "type": "integer",
-                        "format": "int64"
+                        "format": "int64",
+                        "nullable": true
                     },
                     "type": {
                         "type": "string",
                         "example": "image",
                         "nullable": true
                     },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    },
                     "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PageContentResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "trang-chu"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Trang chủ"
+                    },
+                    "sections": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PageSectionResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PageSectionResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "page_content_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Mục trang 1",
+                        "nullable": true
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "example": "Phụ đề mục trang",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Nội dung chính",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FileResource"
+                        }
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SectionItemResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
@@ -1553,6 +2743,54 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/VariantOptionResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SectionItemResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "page_section_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Mục con 1",
+                        "nullable": true
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "example": "Phụ đề mục con",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Nội dung chi tiết mục con",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FileResource"
                         }
                     },
                     "created_at": {
@@ -1719,6 +2957,22 @@
         },
         {
             "name": "Product Variants"
+        },
+        {
+            "name": "Files",
+            "description": "Files"
+        },
+        {
+            "name": "Page Contents",
+            "description": "Page Contents"
+        },
+        {
+            "name": "Page Sections",
+            "description": "Page Sections"
+        },
+        {
+            "name": "Section Items",
+            "description": "Section Items"
         }
     ]
 }

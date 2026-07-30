@@ -30,6 +30,9 @@ return [
         'profile' => 'Thông tin cá nhân',
         'login' => 'Đăng nhập',
         'logout' => 'Đăng xuất',
+        'page_content' => 'Nội dung trang',
+        'page_section' => 'Mục trang',
+        'section_item' => 'Phần tử mục trang',
     ],
     'common' => [
         'list' => 'Lấy danh sách :entity thành công',

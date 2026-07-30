@@ -13,11 +13,13 @@ class File extends Model
         'file_name',
         'disk',
         'path',
+        'external_url',
         'mime_type',
         'size',
         'model_type',
         'model_id',
         'type',
+        'sort_order',
     ];
 
     protected function casts(): array
@@ -25,13 +27,16 @@ class File extends Model
         return [
             'size' => 'integer',
             'model_id' => 'integer',
+            'sort_order' => 'integer',
         ];
     }
 
     protected static function booted(): void
     {
         static::deleting(function (File $file): void {
-            Storage::disk($file->disk)->delete($file->path);
+            if ($file->disk && $file->path) {
+                Storage::disk($file->disk)->delete($file->path);
+            }
         });
     }
 

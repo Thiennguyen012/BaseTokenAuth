@@ -21,6 +21,7 @@ trait HasFiles
     public function files(): MorphMany
     {
         return $this->morphMany(File::class, 'model', 'model_type', 'model_id')
+            ->orderBy('sort_order')
             ->orderBy('id');
     }
 }

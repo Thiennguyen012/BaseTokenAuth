@@ -8,6 +8,10 @@ use App\Http\Controllers\Api\Product\ProductController;
 use App\Http\Controllers\Api\ProductVariant\ProductVariantController;
 use App\Http\Controllers\Api\VariantGroup\VariantGroupController;
 use App\Http\Controllers\Api\VariantOption\VariantOptionController;
+use App\Http\Controllers\Api\PageContent\PageContentController;
+use App\Http\Controllers\Api\PageSection\PageSectionController;
+use App\Http\Controllers\Api\SectionItem\SectionItemController;
+use App\Http\Controllers\Api\File\FileController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
@@ -69,4 +73,38 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [ProductVariantController::class, 'destroy']);
     });
 
+    Route::prefix('page-contents')->group(function () {
+        Route::get('/', [PageContentController::class, 'index']);
+        Route::post('/', [PageContentController::class, 'store']);
+        Route::get('/{id}', [PageContentController::class, 'show']);
+        Route::put('/{id}', [PageContentController::class, 'update']);
+        Route::patch('/{id}', [PageContentController::class, 'update']);
+        Route::delete('/{id}', [PageContentController::class, 'destroy']);
+    });
+
+    Route::prefix('page-sections')->group(function () {
+        Route::get('/', [PageSectionController::class, 'index']);
+        Route::post('/', [PageSectionController::class, 'store']);
+        Route::get('/{id}', [PageSectionController::class, 'show']);
+        Route::put('/{id}', [PageSectionController::class, 'update']);
+        Route::patch('/{id}', [PageSectionController::class, 'update']);
+        Route::delete('/{id}', [PageSectionController::class, 'destroy']);
+    });
+
+    Route::prefix('section-items')->group(function () {
+        Route::get('/', [SectionItemController::class, 'index']);
+        Route::post('/', [SectionItemController::class, 'store']);
+        Route::get('/{id}', [SectionItemController::class, 'show']);
+        Route::put('/{id}', [SectionItemController::class, 'update']);
+        Route::patch('/{id}', [SectionItemController::class, 'update']);
+        Route::delete('/{id}', [SectionItemController::class, 'destroy']);
+    });
+
+    Route::prefix('files')->group(function () {
+        Route::get('/{id}', [FileController::class, 'show']);
+        Route::put('/{id}', [FileController::class, 'update']);
+        Route::patch('/{id}', [FileController::class, 'update']);
+        Route::post('/{id}/replace', [FileController::class, 'replace']);
+        Route::delete('/{id}', [FileController::class, 'destroy']);
+    });
 });
