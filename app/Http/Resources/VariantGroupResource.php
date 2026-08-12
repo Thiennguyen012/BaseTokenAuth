@@ -14,7 +14,6 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="group_name", type="string"),
  *     @OA\Property(property="sort_order", type="integer", nullable=true, description="Chỉ có khi group thuộc product"),
  *     @OA\Property(property="is_required", type="boolean", nullable=true, description="Chỉ có khi group thuộc product"),
- *     @OA\Property(property="options", type="array", @OA\Items(ref="#/components/schemas/VariantOptionResource")),
  *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
  *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
  * )
@@ -29,7 +28,6 @@ class VariantGroupResource extends JsonResource
             'group_name' => $this->group_name,
             'sort_order' => $this->whenPivotLoaded('product_variant_groups', fn () => $this->pivot->sort_order),
             'is_required' => $this->whenPivotLoaded('product_variant_groups', fn () => (bool) $this->pivot->is_required),
-            'options' => $this->whenLoaded('options', fn () => VariantOptionResource::collection($this->options)),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),
         ];

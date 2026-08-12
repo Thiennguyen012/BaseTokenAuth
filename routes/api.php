@@ -43,12 +43,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ProductController::class, 'show']);
         Route::put('/{id}', [ProductController::class, 'update']);
         Route::patch('/{id}', [ProductController::class, 'update']);
+        Route::patch('/{id}/variant-groups/{configurationId}', [ProductController::class, 'updateVariantGroup']);
+        Route::delete('/{id}/variant-groups/{configurationId}', [ProductController::class, 'destroyVariantGroup']);
         Route::delete('/{id}', [ProductController::class, 'destroy']);
     });
 
     Route::prefix('variant-groups')->group(function () {
         Route::get('/', [VariantGroupController::class, 'index']);
         Route::post('/', [VariantGroupController::class, 'store']);
+        Route::get('/{id}/usage', [VariantGroupController::class, 'usage']);
         Route::get('/{id}', [VariantGroupController::class, 'show']);
         Route::put('/{id}', [VariantGroupController::class, 'update']);
         Route::patch('/{id}', [VariantGroupController::class, 'update']);

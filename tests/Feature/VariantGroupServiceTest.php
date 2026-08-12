@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Products\Product;
+use App\Models\Products\ProductVariantGroup;
 use App\Models\Variants\VariantGroup;
 use App\Services\VariantGroup\VariantGroupService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,106 +13,52 @@ class VariantGroupServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_creates_a_group_without_assigning_options_when_option_ids_is_missing(): void
+    public function test_it_creates_lists_finds_and_updates_a_global_group_definition(): void
     {
-        $group = app(VariantGroupService::class)->create([
-            'group_code' => 'color',
-            'group_name' => 'Color',
-        ]);
+        $service = app(VariantGroupService::class);
+        $group = $service->create(['group_code' => 'color', 'group_name' => 'Color']);
 
         $this->assertDatabaseHas('variant_groups', ['id' => $group->id]);
-        $this->assertCount(0, $group->options);
+        $this->assertSame([$group->id], $service->paginate(10)->pluck('id')->all());
+        $this->assertSame($group->id, $service->find($group->id)->id);
+
+        $updated = $service->update($group, ['group_name' => 'Màu sắc']);
+        $this->assertSame('Màu sắc', $updated->group_name);
     }
 
-    public function test_it_creates_a_group_and_assigns_existing_options(): void
+    public function test_options_belong_to_a_product_group_configuration(): void
     {
-        $oldGroup = VariantGroup::query()->create([
-            'group_code' => 'old',
-            'group_name' => 'Old group',
+        $product = Product::query()->create(['product_name' => 'T-shirt']);
+        $group = VariantGroup::query()->create(['group_code' => 'size', 'group_name' => 'Size']);
+        $configuration = ProductVariantGroup::query()->create([
+            'product_id' => $product->id,
+            'variant_group_id' => $group->id,
         ]);
-        $red = $oldGroup->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
-        $blue = $oldGroup->options()->create(['option_code' => 'blue', 'option_name' => 'Blue']);
+        $option = $configuration->options()->create(['option_code' => 's', 'option_name' => 'S']);
 
-        $newGroup = app(VariantGroupService::class)->create([
-            'group_code' => 'color',
-            'group_name' => 'Color',
-            'option_ids' => [$red->id, $blue->id],
-        ]);
-
-        $this->assertEqualsCanonicalizing([$red->id, $blue->id], $newGroup->options->pluck('id')->all());
-        $this->assertDatabaseHas('variant_options', ['id' => $red->id, 'variant_group_id' => $newGroup->id]);
-        $this->assertDatabaseHas('variant_options', ['id' => $blue->id, 'variant_group_id' => $newGroup->id]);
+        $this->assertSame($configuration->id, $option->product_variant_group_id);
+        $this->assertSame($product->id, $option->productVariantGroup->product_id);
+        $this->assertSame($group->id, $option->productVariantGroup->variant_group_id);
     }
 
-    public function test_it_paginates_groups_with_options_in_name_order(): void
+    public function test_it_counts_products_using_a_variant_group(): void
     {
-        $second = VariantGroup::query()->create([
-            'group_code' => 'size',
-            'group_name' => 'Size',
-        ]);
-        $first = VariantGroup::query()->create([
-            'group_code' => 'color',
-            'group_name' => 'Color',
-        ]);
-        $first->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
+        $group = VariantGroup::query()->create(['group_code' => 'color', 'group_name' => 'Color']);
+        foreach (['A', 'B'] as $name) {
+            $product = Product::query()->create(['product_name' => "Product {$name}"]);
+            ProductVariantGroup::query()->create(['product_id' => $product->id, 'variant_group_id' => $group->id]);
+        }
 
-        $groups = app(VariantGroupService::class)->paginate(10);
-
-        $this->assertSame([$first->id, $second->id], $groups->pluck('id')->all());
-        $this->assertTrue($groups->first()->relationLoaded('options'));
+        $this->assertSame(2, app(VariantGroupService::class)->usageCount($group->id));
+        $this->assertNull(app(VariantGroupService::class)->usageCount(999999));
     }
 
-    public function test_it_finds_a_group_with_options(): void
+    public function test_deleting_a_group_deletes_product_specific_options(): void
     {
-        $group = VariantGroup::query()->create([
-            'group_code' => 'color',
-            'group_name' => 'Color',
-        ]);
-        $option = $group->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
-
-        $result = app(VariantGroupService::class)->find($group->id);
-
-        $this->assertNotNull($result);
-        $this->assertTrue($result->relationLoaded('options'));
-        $this->assertSame([$option->id], $result->options->pluck('id')->all());
-    }
-
-    public function test_it_updates_a_group_and_assigns_options(): void
-    {
-        $group = VariantGroup::query()->create([
-            'group_code' => 'colour',
-            'group_name' => 'Colour',
-        ]);
-        $otherGroup = VariantGroup::query()->create([
-            'group_code' => 'other',
-            'group_name' => 'Other',
-        ]);
-        $option = $otherGroup->options()->create([
-            'option_code' => 'red',
-            'option_name' => 'Red',
-        ]);
-
-        $result = app(VariantGroupService::class)->update($group, [
-            'group_code' => 'color',
-            'group_name' => 'Color',
-            'option_ids' => [$option->id],
-        ]);
-
-        $this->assertSame('color', $result->group_code);
-        $this->assertSame('Color', $result->group_name);
-        $this->assertSame($group->id, $option->fresh()->variant_group_id);
-    }
-
-    public function test_it_deletes_a_group_and_its_options(): void
-    {
-        $group = VariantGroup::query()->create([
-            'group_code' => 'color',
-            'group_name' => 'Color',
-        ]);
-        $option = $group->options()->create([
-            'option_code' => 'red',
-            'option_name' => 'Red',
-        ]);
+        $product = Product::query()->create(['product_name' => 'T-shirt']);
+        $group = VariantGroup::query()->create(['group_code' => 'color', 'group_name' => 'Color']);
+        $configuration = ProductVariantGroup::query()->create(['product_id' => $product->id, 'variant_group_id' => $group->id]);
+        $option = $configuration->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
 
         app(VariantGroupService::class)->delete($group);
 

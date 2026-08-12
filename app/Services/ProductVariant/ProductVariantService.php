@@ -32,7 +32,7 @@ class ProductVariantService
             $where,
             ['id' => 'desc'],
             ['*'],
-            ['files', 'options.group'],
+            ['files', 'options.productVariantGroup.group'],
             $limit
         );
     }
@@ -43,14 +43,14 @@ class ProductVariantService
             ['id' => $id],
             [],
             ['*'],
-            ['files', 'options.group']
+            ['files', 'options.productVariantGroup.group']
         );
     }
 
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $product = Product::query()->with('variantGroups')->lockForUpdate()->findOrFail($data['product_id']);
+            $product = Product::query()->with('variantGroupConfigurations')->lockForUpdate()->findOrFail($data['product_id']);
             $optionIds = $this->validateAndNormalizeOptions($product, $data['option_ids']);
             $images = $data['images'] ?? [];
 
@@ -67,7 +67,7 @@ class ProductVariantService
             $variant->options()->attach($optionIds->all());
             $this->uploadImages($variant, $images);
 
-            return $variant->load(['files', 'options.group']);
+            return $variant->load(['files', 'options.productVariantGroup.group']);
         });
     }
 
@@ -76,7 +76,7 @@ class ProductVariantService
         return DB::transaction(function () use ($variant, $data) {
             $variant = $variant->newQuery()->lockForUpdate()->findOrFail($variant->id);
             $productId = (int) ($data['product_id'] ?? $variant->product_id);
-            $product = Product::query()->with('variantGroups')->lockForUpdate()->findOrFail($productId);
+            $product = Product::query()->with('variantGroupConfigurations')->lockForUpdate()->findOrFail($productId);
             $optionIds = array_key_exists('option_ids', $data)
                 ? $data['option_ids']
                 : $variant->options()->pluck('variant_options.id')->all();
@@ -100,7 +100,7 @@ class ProductVariantService
             $variant->options()->sync($optionIds->all());
             $this->uploadImages($variant, $images);
 
-            return $variant->load(['files', 'options.group']);
+            return $variant->load(['files', 'options.productVariantGroup.group']);
         });
     }
 
@@ -112,7 +112,7 @@ class ProductVariantService
     private function validateAndNormalizeOptions(Product $product, array $optionIds)
     {
         $optionIds = collect($optionIds)->map(fn ($id) => (int) $id)->unique()->sort()->values();
-        $options = VariantOption::query()->whereIn('id', $optionIds)->where('is_active', true)->get();
+        $options = VariantOption::query()->with('productVariantGroup')->whereIn('id', $optionIds)->where('is_active', true)->get();
 
         if ($options->count() !== $optionIds->count()) {
             throw ValidationException::withMessages([
@@ -120,8 +120,8 @@ class ProductVariantService
             ]);
         }
 
-        $allowedGroups = $product->variantGroups->pluck('id');
-        $selectedGroups = $options->pluck('variant_group_id');
+        $allowedGroups = $product->variantGroupConfigurations->pluck('id');
+        $selectedGroups = $options->pluck('product_variant_group_id');
 
         if ($selectedGroups->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -135,8 +135,8 @@ class ProductVariantService
             ]);
         }
 
-        $requiredGroups = $product->variantGroups
-            ->filter(fn ($group) => (bool) $group->pivot->is_required)
+        $requiredGroups = $product->variantGroupConfigurations
+            ->filter(fn ($group) => (bool) $group->is_required)
             ->pluck('id');
 
         if ($requiredGroups->diff($selectedGroups)->isNotEmpty()) {

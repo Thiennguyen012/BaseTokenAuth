@@ -15,10 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn (Request $request) => null);
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('cms/*') || $request->is('cms')
+            ? route('cms.login')
+            : null);
 
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'cms.token.valid' => \App\Http\Middleware\EnsureCmsTokenIsValid::class,
         ]);
 
         $middleware->group('api', [

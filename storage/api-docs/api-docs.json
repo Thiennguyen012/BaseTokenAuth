@@ -1070,6 +1070,17 @@
                         }
                     },
                     {
+                        "name": "category_ids[]",
+                        "in": "query",
+                        "description": "Lọc theo nhiều danh mục (AND); sản phẩm phải thuộc tất cả danh mục đã chọn",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
                         "schema": {
@@ -1276,6 +1287,105 @@
                     },
                     "404": {
                         "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/products/{id}/variant-groups/{configurationId}": {
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Gỡ nhóm biến thể khỏi sản phẩm",
+                "operationId": "e855f343f32ee383b0941f5724efbfde",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "configurationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã gỡ nhóm"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Đang được sử dụng"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Cập nhật cấu hình nhóm biến thể của sản phẩm",
+                "operationId": "b7e25a8ba62b36430ada8ee4a63c57f6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "configurationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "is_required": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
                     }
                 },
                 "security": [
@@ -1750,6 +1860,38 @@
                 ]
             }
         },
+        "/api/variant-groups/{id}/usage": {
+            "get": {
+                "tags": [
+                    "Variant Groups"
+                ],
+                "summary": "Số sản phẩm đang sử dụng nhóm biến thể",
+                "operationId": "1383b43ee113a9c9f73fb0a2c0af8ec7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/variant-options": {
             "get": {
                 "tags": [
@@ -1766,7 +1908,7 @@
                         }
                     },
                     {
-                        "name": "variant_group_id",
+                        "name": "product_variant_group_id",
                         "in": "query",
                         "schema": {
                             "type": "integer"
@@ -2236,6 +2378,12 @@
                         "nullable": true,
                         "default": false
                     },
+                    "category_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
                     "variant_groups": {
                         "type": "array",
                         "items": {
@@ -2292,6 +2440,12 @@
                     },
                     "is_featured": {
                         "type": "boolean"
+                    },
+                    "category_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
                     },
                     "variant_groups": {
                         "type": "array",
@@ -2461,12 +2615,12 @@
             },
             "StoreVariantOptionRequest": {
                 "required": [
-                    "variant_group_id",
+                    "product_variant_group_id",
                     "option_code",
                     "option_name"
                 ],
                 "properties": {
-                    "variant_group_id": {
+                    "product_variant_group_id": {
                         "type": "integer",
                         "example": 1
                     },
@@ -2494,7 +2648,7 @@
             },
             "UpdateVariantOptionRequest": {
                 "properties": {
-                    "variant_group_id": {
+                    "product_variant_group_id": {
                         "type": "integer"
                     },
                     "option_code": {
@@ -2513,6 +2667,24 @@
                     "is_active": {
                         "type": "boolean",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "category_name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer"
                     }
                 },
                 "type": "object"
@@ -2680,6 +2852,12 @@
                     "is_featured": {
                         "type": "boolean"
                     },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryResource"
+                        }
+                    },
                     "images": {
                         "type": "array",
                         "items": {
@@ -2689,7 +2867,7 @@
                     "variant_groups": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/VariantGroupResource"
+                            "$ref": "#/components/schemas/ProductVariantGroupResource"
                         }
                     },
                     "variants": {
@@ -2707,6 +2885,35 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductVariantGroupResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "variant_group_id": {
+                        "type": "integer"
+                    },
+                    "group_code": {
+                        "type": "string"
+                    },
+                    "group_name": {
+                        "type": "string"
+                    },
+                    "is_required": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VariantOptionResource"
+                        }
                     }
                 },
                 "type": "object"
@@ -2881,12 +3088,6 @@
                         "type": "boolean",
                         "nullable": true
                     },
-                    "options": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/VariantOptionResource"
-                        }
-                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -2903,6 +3104,12 @@
             "VariantOptionResource": {
                 "properties": {
                     "id": {
+                        "type": "integer"
+                    },
+                    "product_variant_group_id": {
+                        "type": "integer"
+                    },
+                    "product_id": {
                         "type": "integer"
                     },
                     "variant_group_id": {

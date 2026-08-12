@@ -39,7 +39,7 @@ class UpdatePageSectionRequest extends FormRequest
             'subtitle' => 'nullable|string|max:255',
             'content' => 'nullable|string',
             'files' => 'sometimes|array|max:20',
-            'files.*' => 'required|file|mimes:jpeg,jpg,png,webp,svg,gif,mp4,mov,avi,mkv,webm|max:51200',
+            'files.*' => 'required|file|mimes:jpeg,jpg,png,webp,svg,gif,mp4,mov,avi,mkv,webm,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip,rar|max:51200',
             'video_urls' => 'sometimes|array|max:20',
             'video_urls.*' => 'required|url|max:2048',
             'sort_order' => 'nullable|integer|min:0',

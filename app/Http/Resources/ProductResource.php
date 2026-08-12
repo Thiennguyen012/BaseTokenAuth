@@ -15,8 +15,9 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="is_active", type="boolean"),
  *     @OA\Property(property="is_featured", type="boolean"),
+ *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryResource")),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
- *     @OA\Property(property="variant_groups", type="array", @OA\Items(ref="#/components/schemas/VariantGroupResource")),
+ *     @OA\Property(property="variant_groups", type="array", @OA\Items(ref="#/components/schemas/ProductVariantGroupResource")),
  *     @OA\Property(property="variants", type="array", @OA\Items(ref="#/components/schemas/ProductVariantResource")),
  *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
  *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
@@ -38,11 +39,16 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
+            'categories' => $this->whenLoaded('categories', fn () => CategoryResource::collection($this->categories)),
+            'category_names' => $this->whenLoaded('categories', fn () => $this->categories->pluck('category_name')->implode(', ')),
             'images' => $this->whenLoaded(
                 'files',
                 fn () => FileResource::collection($this->files->where('type', 'image')->values())
             ),
-            'variant_groups' => $this->whenLoaded('variantGroups', fn () => VariantGroupResource::collection($this->variantGroups)),
+            'variant_groups' => $this->whenLoaded(
+                'variantGroupConfigurations',
+                fn () => ProductVariantGroupResource::collection($this->variantGroupConfigurations)
+            ),
             'variants' => $this->whenLoaded('variants', fn () => ProductVariantResource::collection($this->variants)),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),

@@ -1,0 +1,891 @@
+window.CMS = (() => {
+    const tokenKey = 'nhua_cms_token';
+    const toastKey = 'nhua_cms_toast';
+    const api = () => document.body.dataset.api || '/api';
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    let loggingOut = false;
+
+    function expireSession() {
+        if (loggingOut) return;
+        loggingOut = true;
+        localStorage.removeItem(tokenKey);
+        const logoutForm = document.querySelector('form[action$="/cms/logout"]');
+        if (logoutForm) {
+            logoutForm.submit();
+            return;
+        }
+        location.replace(document.body.dataset.login || '/cms/login');
+    }
+
+    function toast(message, error = false) {
+        const element = document.querySelector('[data-toast]');
+        if (!element) return;
+        element.innerHTML = `<span class="toast-icon">${error ? '!' : '✓'}</span><span>${esc(message)}</span>`;
+        element.className = `toast${error ? ' error' : ''}`;
+        element.style.display = 'block';
+        clearTimeout(element._timer);
+        element._timer = setTimeout(() => element.style.display = 'none', 4000);
+    }
+
+    function flashToast(message, error = false) {
+        sessionStorage.setItem(toastKey, JSON.stringify({message, error}));
+    }
+
+    async function request(path, options = {}) {
+        const token = document.body.dataset.accessToken || localStorage.getItem(tokenKey);
+        options.headers = {Accept: 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {}), ...(options.headers || {})};
+        const response = await fetch(api() + path, options);
+        let body = {};
+        try { body = await response.json(); } catch {}
+        if (response.status === 401) {
+            expireSession();
+            throw new Error('Phiên đăng nhập đã hết hạn');
+        }
+        if (!response.ok) {
+            const details = body.errors ? Object.values(body.errors).flat().join('\n') : '';
+            throw new Error(details || body.message || 'Có lỗi xảy ra');
+        }
+        return body;
+    }
+
+    function common() {
+        const token = document.body.dataset.accessToken;
+        if (token) localStorage.setItem(tokenKey, token);
+        const pendingToast = sessionStorage.getItem(toastKey);
+        if (pendingToast) {
+            sessionStorage.removeItem(toastKey);
+            try {
+                const notification = JSON.parse(pendingToast);
+                toast(notification.message, !!notification.error);
+            } catch {}
+        }
+        const expiresAt = Number(document.body.dataset.accessTokenExpiresAt || 0) * 1000;
+        if (expiresAt) {
+            const remaining = expiresAt - Date.now();
+            if (remaining <= 0) expireSession();
+            else setTimeout(expireSession, remaining);
+        }
+        document.querySelector('[data-menu]')?.addEventListener('click', () => document.querySelector('[data-sidebar]')?.classList.toggle('open'));
+    }
+
+    function show(value) {
+        if (typeof value === 'boolean') return `<span class="badge ${value ? 'on' : ''}">${value ? 'Có' : 'Không'}</span>`;
+        if (Array.isArray(value)) return `<span class="badge">${value.length} mục</span>`;
+        return esc(value ?? '—');
+    }
+
+    function tableValue(key, value) {
+        if (key === 'category_names') {
+            const full = String(value || '—');
+            const short = full.length > 45 ? `${full.slice(0, 45).trim()}...` : full;
+            return `<span class="table-ellipsis" title="${esc(full)}">${esc(short)}</span>`;
+        }
+        return show(value);
+    }
+
+    function fileKind(file) {
+        const name = String(file.name || file.file_name || file.path || '').toLowerCase();
+        const mime = String(file.type || file.mime_type || '').toLowerCase();
+        if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/.test(name)) return 'image';
+        if (mime.includes('pdf') || name.endsWith('.pdf')) return 'PDF';
+        if (mime.includes('word') || /\.docx?$/.test(name)) return 'WORD';
+        if (mime.includes('excel') || mime.includes('spreadsheet') || /\.(xlsx?|csv)$/.test(name)) return 'EXCEL';
+        if (mime.includes('powerpoint') || mime.includes('presentation') || /\.pptx?$/.test(name)) return 'PPT';
+        if (/\.(zip|rar|7z)$/.test(name)) return 'ZIP';
+        if (mime.startsWith('video/')) return 'VIDEO';
+        return (name.split('.').pop() || 'FILE').toUpperCase().slice(0, 5);
+    }
+
+    function fileSize(bytes) {
+        if (!Number(bytes)) return '';
+        const units = ['B', 'KB', 'MB', 'GB']; let size = Number(bytes), index = 0;
+        while (size >= 1024 && index < units.length - 1) { size /= 1024; index++; }
+        return `${size.toFixed(index ? 1 : 0)} ${units[index]}`;
+    }
+
+    function renderUploadItem(file, source, remove) {
+        const item = document.createElement('div'); item.className = 'upload-file-item';
+        const kind = fileKind(file); const name = file.name || file.file_name || file.path?.split('/').pop() || 'File';
+        const path = file.path ? `${document.body.dataset.storage || '/storage'}/${String(file.path).replace(/^\//, '')}` : '';
+        if (kind === 'image') {
+            const url = source === 'new' ? URL.createObjectURL(file) : path;
+            item.innerHTML = `<div class="upload-thumb"><img src="${esc(url)}" alt=""></div><div class="upload-file-info"><strong title="${esc(name)}">${esc(name)}</strong><small>${fileSize(file.size)}</small></div>`;
+            if (source === 'new') item._objectUrl = url;
+        } else item.innerHTML = `<div class="upload-doc-icon type-${kind.toLowerCase()}">${esc(kind)}</div><div class="upload-file-info"><strong title="${esc(name)}">${esc(name)}</strong><small>${fileSize(file.size)}</small></div>`;
+        if (source === 'new') {
+            const button = document.createElement('button'); button.type = 'button'; button.className = 'upload-remove'; button.title = 'Bỏ file'; button.textContent = '×';
+            button.onclick = () => { if (item._objectUrl) URL.revokeObjectURL(item._objectUrl); remove(); }; item.appendChild(button);
+        } else {
+            item.classList.add('existing');
+            if (file.id) {
+                const button = document.createElement('button');
+                button.type = 'button'; button.className = 'upload-remove stored-file-remove'; button.title = 'Xóa file đã lưu'; button.setAttribute('aria-label', 'Xóa file đã lưu');
+                button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+                button.onclick = async () => {
+                    if (!await confirmRemoveStoredFile(name)) return;
+                    button.disabled = true;
+                    try {
+                        const result = await request(`/files/${file.id}`, {method: 'DELETE'});
+                        item.remove();
+                        toast(result.message || 'Đã xóa file');
+                    } catch (error) {
+                        button.disabled = false;
+                        toast(error.message, true);
+                    }
+                };
+                item.appendChild(button);
+            }
+        }
+        return item;
+    }
+
+    function setupMultiUploads(form) {
+        form.querySelectorAll('[data-multi-upload]').forEach(upload => {
+            const input = upload.querySelector('[data-upload-input]'), zone = upload.querySelector('[data-upload-dropzone]'), preview = upload.querySelector('[data-upload-preview]');
+            let files = [];
+            const sync = () => {
+                const transfer = new DataTransfer(); files.forEach(file => transfer.items.add(file)); input.files = transfer.files;
+                preview.querySelectorAll('[data-new-file]').forEach(item => item.remove());
+                files.forEach((file, index) => { const item = renderUploadItem(file, 'new', () => { files.splice(index, 1); sync(); }); item.dataset.newFile = '1'; preview.appendChild(item); });
+            };
+            const add = incoming => { files = [...files, ...incoming]; sync(); };
+            input.addEventListener('change', () => add([...input.files]));
+            ['dragenter', 'dragover'].forEach(name => zone.addEventListener(name, event => { event.preventDefault(); zone.classList.add('dragover'); }));
+            ['dragleave', 'drop'].forEach(name => zone.addEventListener(name, event => { event.preventDefault(); zone.classList.remove('dragover'); }));
+            zone.addEventListener('drop', event => add([...event.dataTransfer.files]));
+            upload._showExisting = existing => { preview.querySelectorAll('.existing').forEach(item => item.remove()); (existing || []).forEach(file => preview.appendChild(renderUploadItem(file, 'existing'))); };
+        });
+    }
+
+    function indexPage() {
+        const root = document.querySelector('.module-table');
+        const endpoint = root.dataset.endpoint;
+        const editUrl = root.dataset.editUrl;
+        const columns = JSON.parse(root.querySelector('[data-columns]').textContent);
+        const tbody = root.querySelector('[data-table-body]');
+        const filters = [...root.querySelectorAll('[data-filter-name]')];
+        let timer;
+        async function load(search = '') {
+            tbody.innerHTML = `<tr><td class="empty loading-state" colspan="${columns.length + 1}">Đang tải dữ liệu...</td></tr>`;
+            try {
+                const params = new URLSearchParams({per_page: '50', search});
+                filters.forEach(filter => {
+                    if (filter.dataset.filterMultiple) (filter._selected || []).forEach(item => params.append(`${filter.dataset.filterName}[]`, item.id));
+                    else if (filter.value) params.set(filter.dataset.filterName, filter.value);
+                });
+                const result = await request(`/${endpoint}?${params.toString()}`);
+                const rows = result.data || [];
+                tbody.innerHTML = rows.length ? rows.map(row => `<tr>${columns.map(key => `<td>${tableValue(key, row[key])}</td>`).join('')}<td><div class="actions"><a class="btn icon-button" href="${editUrl}/${row.id}/edit" title="Sửa" aria-label="Sửa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></a><button class="btn icon-button danger-icon delete" data-id="${row.id}" title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></td></tr>`).join('') : `<tr><td class="empty" colspan="${columns.length + 1}">Chưa có dữ liệu</td></tr>`;
+                tbody.querySelectorAll('.delete').forEach(button => button.onclick = async () => {
+                    if (!confirm('Bạn chắc chắn muốn xóa?')) return;
+                    try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa'); load(); }
+                    catch (error) { toast(error.message, true); }
+                });
+            } catch (error) { tbody.innerHTML = `<tr><td class="empty" colspan="${columns.length + 1}">${esc(error.message)}</td></tr>`; }
+        }
+        const searchInput = root.querySelector('[data-search]');
+        Promise.all(filters.map(async filter => {
+            const result = await request(`/${filter.dataset.source}?per_page=100`);
+            const items = result.data || [];
+            if (filter.dataset.filterMultiple) {
+                filter._selected = [];
+                const chips = filter.closest('[data-filter-wrap]').querySelector('[data-filter-chips]');
+                const filterWrap = filter.closest('[data-filter-wrap]');
+                const filterToggle = filterWrap.querySelector('[data-filter-toggle]');
+                const filterSummary = filterWrap.querySelector('[data-filter-summary]');
+                const filterMenu = filterWrap.querySelector('[data-filter-menu]');
+                const renderCheckboxMenu = () => {
+                    const selectedIds = new Set(filter._selected.map(item => String(item.id)));
+                    filterSummary.textContent = selectedIds.size
+                        ? `Đã chọn ${selectedIds.size} danh mục`
+                        : (filter.dataset.filterLabel || 'Chọn danh mục để lọc');
+                    filterMenu.innerHTML = items.length ? items.map(item => {
+                        const id = String(item[filter.dataset.value]);
+                        return `<label class="checkbox-filter-option"><input type="checkbox" value="${esc(id)}" ${selectedIds.has(id) ? 'checked' : ''}><span>${esc(item[filter.dataset.text])}</span></label>`;
+                    }).join('') : '<div class="checkbox-filter-empty">Chưa có danh mục</div>';
+                    filterMenu.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.onchange = () => {
+                        const item = items.find(value => String(value[filter.dataset.value]) === checkbox.value);
+                        if (checkbox.checked && item && !filter._selected.some(value => String(value.id) === checkbox.value)) {
+                            filter._selected.push({id: item[filter.dataset.value], name: item[filter.dataset.text]});
+                        } else if (!checkbox.checked) {
+                            filter._selected = filter._selected.filter(value => String(value.id) !== checkbox.value);
+                        }
+                        render();
+                        renderCheckboxMenu();
+                        filterMenu.hidden = false;
+                        filterWrap.classList.add('open');
+                        load(searchInput.value);
+                    });
+                };
+                const render = () => {
+                    const selectedIds = new Set(filter._selected.map(item => String(item.id)));
+                    filter.innerHTML = `<option value="">Chọn danh mục để lọc</option>` + items.filter(item => !selectedIds.has(String(item[filter.dataset.value]))).map(item => `<option value="${item[filter.dataset.value]}">${esc(item[filter.dataset.text])}</option>`).join('');
+                    chips.innerHTML = filter._selected.map(item => `<span class="filter-chip">${esc(item.name)}<button type="button" data-remove-filter="${item.id}" aria-label="Bỏ bộ lọc">×</button></span>`).join('');
+                    chips.querySelectorAll('[data-remove-filter]').forEach(button => button.onclick = () => {
+                        filter._selected = filter._selected.filter(item => String(item.id) !== button.dataset.removeFilter);
+                        render(); load(searchInput.value);
+                    });
+                };
+                filter.onchange = () => {
+                    if (!filter.value) return;
+                    const item = items.find(value => String(value[filter.dataset.value]) === filter.value);
+                    if (item) filter._selected.push({id: item[filter.dataset.value], name: item[filter.dataset.text]});
+                    render(); load(searchInput.value);
+                };
+                filterToggle.onclick = event => {
+                    event.stopPropagation();
+                    const willOpen = filterMenu.hidden;
+                    document.querySelectorAll('[data-filter-menu]').forEach(menu => menu.hidden = true);
+                    document.querySelectorAll('[data-filter-wrap].open').forEach(wrap => wrap.classList.remove('open'));
+                    filterMenu.hidden = !willOpen;
+                    filterWrap.classList.toggle('open', willOpen);
+                };
+                filterMenu.onclick = event => event.stopPropagation();
+                filter._resetFilter = () => {
+                    filter._selected = [];
+                    filter.value = '';
+                    render();
+                    renderCheckboxMenu();
+                    filterMenu.hidden = true;
+                    filterWrap.classList.remove('open');
+                };
+                render();
+                renderCheckboxMenu();
+            } else {
+                items.forEach(item => filter.add(new Option(item[filter.dataset.text], item[filter.dataset.value])));
+                filter.onchange = () => load(searchInput.value);
+                filter._resetFilter = () => { filter.value = ''; };
+            }
+        })).catch(error => toast(error.message, true));
+        document.addEventListener('click', event => {
+            if (event.target.closest('[data-filter-wrap]')) return;
+            root.querySelectorAll('[data-filter-menu]').forEach(menu => menu.hidden = true);
+            root.querySelectorAll('[data-filter-wrap].open').forEach(wrap => wrap.classList.remove('open'));
+        });
+        searchInput.oninput = event => { clearTimeout(timer); timer = setTimeout(() => load(event.target.value), 350); };
+        root.querySelector('[data-reload]').onclick = () => {
+            clearTimeout(timer);
+            searchInput.value = '';
+            filters.forEach(filter => {
+                if (filter._resetFilter) filter._resetFilter();
+                else {
+                    filter.value = '';
+                    if (filter.dataset.filterMultiple) filter._selected = [];
+                }
+            });
+            load('');
+        };
+        load();
+    }
+
+    function modalShell(content) {
+        const overlay = document.createElement('div');
+        overlay.className = 'cms-modal-overlay';
+        overlay.innerHTML = `<div class="cms-modal">${content}</div>`;
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    function confirmGroupEdit(group, productsCount) {
+        return new Promise(resolve => {
+            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Cảnh báo thay đổi nhóm biến thể</h3><p>Nhóm <strong>${esc(group.group_name)}</strong> đang được sử dụng bởi <strong>${productsCount} sản phẩm</strong>.</p></div></div><div class="cms-alert">Việc đổi tên hoặc mã nhóm sẽ hiển thị trên tất cả sản phẩm đang sử dụng nhóm này. Bạn có muốn tiếp tục?</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn primary" data-confirm>Tiếp tục sửa</button></div>`);
+            const close = result => { overlay.remove(); resolve(result); };
+            overlay.querySelector('[data-cancel]').onclick = () => close(false);
+            overlay.querySelector('[data-confirm]').onclick = () => close(true);
+            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        });
+    }
+
+    function confirmRemoveProductGroup(group) {
+        return new Promise(resolve => {
+            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa nhóm biến thể khỏi sản phẩm?</h3><p>Nhóm <strong>${esc(group.group_name)}</strong> và các giá trị riêng sẽ bị xóa khỏi sản phẩm này.</p></div></div><div class="cms-alert">Thao tác được thực hiện ngay, không cần nhấn “Lưu thay đổi”.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
+            const close = result => { overlay.remove(); resolve(result); };
+            overlay.querySelector('[data-cancel]').onclick = () => close(false);
+            overlay.querySelector('[data-confirm]').onclick = () => close(true);
+            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        });
+    }
+
+    function confirmRemoveVariantOption(optionName) {
+        return new Promise(resolve => {
+            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa giá trị biến thể?</h3><p>Giá trị <strong>${esc(optionName || 'này')}</strong> sẽ bị xóa khỏi sản phẩm.</p></div></div><div class="cms-alert">Thao tác được thực hiện ngay, không cần nhấn “Lưu thay đổi”.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
+            const close = result => { overlay.remove(); resolve(result); };
+            overlay.querySelector('[data-cancel]').onclick = () => close(false);
+            overlay.querySelector('[data-confirm]').onclick = () => close(true);
+            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        });
+    }
+
+    function confirmRemoveStoredFile(fileName) {
+        return new Promise(resolve => {
+            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa file đã lưu?</h3><p>File <strong>${esc(fileName)}</strong> sẽ bị xóa khỏi dữ liệu và bộ nhớ lưu trữ.</p></div></div><div class="cms-alert">Thao tác này được thực hiện ngay và không cần lưu lại form.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
+            const close = result => { overlay.remove(); resolve(result); };
+            overlay.querySelector('[data-cancel]').onclick = () => close(false);
+            overlay.querySelector('[data-confirm]').onclick = () => close(true);
+            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        });
+    }
+
+    function groupFormModal(group = null) {
+        return new Promise(resolve => {
+            const editing = !!group;
+            const overlay = modalShell(`<form class="cms-group-form"><div class="cms-modal-title"><h3>${editing ? 'Sửa' : 'Thêm mới'} nhóm biến thể</h3><button type="button" class="modal-close" data-cancel>×</button></div><div class="cms-modal-body"><div class="field"><label>Mã nhóm biến thể</label><input class="input" name="group_code" value="${esc(group?.group_code || '')}" placeholder="Ví dụ: color" required></div><div class="field"><label>Tên nhóm biến thể</label><input class="input" name="group_name" value="${esc(group?.group_name || '')}" placeholder="Ví dụ: Màu sắc" required></div><div class="form-error" data-modal-error></div></div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="submit" class="btn primary">${editing ? 'Lưu thay đổi' : 'Thêm nhóm'}</button></div></form>`);
+            const form = overlay.querySelector('form');
+            const close = result => { overlay.remove(); resolve(result); };
+            overlay.querySelectorAll('[data-cancel]').forEach(button => button.onclick = () => close(null));
+            overlay.onclick = event => { if (event.target === overlay) close(null); };
+            form.onsubmit = async event => {
+                event.preventDefault();
+                const button = form.querySelector('button[type="submit"]');
+                const error = form.querySelector('[data-modal-error]');
+                button.disabled = true;
+                error.textContent = '';
+                try {
+                    const payload = Object.fromEntries(new FormData(form));
+                    const result = await request(`/variant-groups${editing ? '/' + group.id : ''}`, {
+                        method: editing ? 'PUT' : 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                    });
+                    close({...result.data, _message: result.message});
+                } catch (exception) {
+                    error.textContent = exception.message;
+                    button.disabled = false;
+                }
+            };
+        });
+    }
+
+    function selectedGroupState(picker) {
+        const state = new Map();
+        picker.querySelectorAll('.relation-row').forEach(row => {
+            const checkbox = row.querySelector('[data-group-check]');
+            if (checkbox?.checked) state.set(Number(checkbox.value), {
+                configuration_id: row.dataset.configurationId || null,
+                is_required: row.querySelector('[data-required]').checked,
+                sort_order: row.querySelector('.relation-order').value,
+                options: [...row.querySelectorAll('.product-option-row')].map(optionRow => ({
+                    id: optionRow.querySelector('[data-option-field="id"]').value || null,
+                    option_code: optionRow.querySelector('[data-option-field="option_code"]').value,
+                    option_name: optionRow.querySelector('[data-option-field="option_name"]').value,
+                    sort_order: optionRow.querySelector('[data-option-field="sort_order"]').value,
+                    is_active: optionRow.querySelector('[data-option-field="is_active"]').checked,
+                })),
+            });
+        });
+        return state;
+    }
+
+    function renderGroupPicker(picker, groups, state = new Map()) {
+        picker._groups = groups;
+        picker.innerHTML = groups.length ? `<div class="relation-toolbar"><div class="relation-search-wrap"><span>⌕</span><input class="input relation-search" type="search" placeholder="Nhập tên hoặc mã nhóm để tìm..." data-group-search autocomplete="off"></div><div class="relation-toolbar-actions"><span class="selected-count" data-selected-count>Đã chọn 0 nhóm</span><button type="button" class="btn primary compact" data-add-group>＋ Thêm nhóm</button></div></div><div class="group-search-results" data-group-search-results hidden><div class="group-list-title">Kết quả tìm kiếm</div><div data-group-list>${groups.map(group => `<div class="relation-row" data-group-id="${group.id}" data-search-text="${esc(`${group.group_name} ${group.group_code}`.toLowerCase())}"><div class="relation-main"><button type="button" class="group-drag" draggable="true" title="Kéo để đổi thứ tự nhóm" aria-label="Kéo để đổi thứ tự nhóm">⠿</button><input type="checkbox" data-group-check value="${group.id}" hidden><span><strong data-group-name>${esc(group.group_name)}</strong><small data-group-code>${esc(group.group_code)}</small></span></div><label class="required-control">Bắt buộc <input type="checkbox" data-required disabled></label><label class="group-order-control">Thứ tự trong sản phẩm <input class="input relation-order" type="number" min="0" value="" placeholder="Tự động" disabled></label><div class="group-row-actions"><button type="button" class="btn compact select-group" data-select-group>＋ Chọn</button><button type="button" class="btn compact edit-group" data-edit-group="${group.id}">Sửa</button><button type="button" class="btn compact remove-group" data-remove-group title="Gỡ nhóm khỏi sản phẩm" aria-label="Gỡ nhóm khỏi sản phẩm">🗑</button></div><div class="product-options" data-product-options hidden><div class="product-options-head"><strong>Giá trị riêng của sản phẩm</strong><button type="button" class="btn compact" data-add-option>＋ Thêm giá trị</button></div><div data-option-rows></div></div></div>`).join('')}</div><div class="relation-no-result" data-no-result hidden>Không tìm thấy nhóm biến thể phù hợp.</div></div><div class="selected-groups-section"><div class="group-list-title">Nhóm biến thể đã chọn</div><div data-selected-group-list></div><div class="selected-groups-empty" data-selected-empty>Chưa chọn nhóm biến thể nào. Hãy tìm kiếm và chọn nhóm muốn sử dụng.</div></div>` : `<div class="relation-toolbar"><span>Chưa có nhóm biến thể.</span><button type="button" class="btn primary compact" data-add-group>＋ Thêm nhóm đầu tiên</button></div>`;
+        setupGroupPicker(picker);
+        picker.querySelectorAll('.product-options-head strong').forEach(title => title.textContent = 'Giá trị của biến thể');
+        picker.querySelectorAll('[data-edit-group]').forEach(button => {
+            button.classList.add('icon-button');
+            button.title = 'Sửa nhóm biến thể';
+            button.setAttribute('aria-label', 'Sửa nhóm biến thể');
+            button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
+        });
+        picker.querySelectorAll('[data-remove-group]').forEach(button => {
+            button.classList.add('icon-button', 'danger-icon');
+            button.title = 'Xóa nhóm khỏi sản phẩm';
+            button.setAttribute('aria-label', 'Xóa nhóm khỏi sản phẩm');
+            button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        });
+        state.forEach((value, id) => {
+            const row = picker.querySelector(`[data-group-id="${id}"]`);
+            if (!row) return;
+            row.querySelector('[data-group-check]').checked = true;
+            row.dataset.configurationId = value.configuration_id || '';
+            row.querySelector('[data-required]').checked = !!value.is_required;
+            row.querySelector('.relation-order').value = value.sort_order;
+            setProductOptions(row, value.options || []);
+        });
+        picker._updateSelection?.();
+        picker.querySelector('[data-add-group]').onclick = async () => {
+            const currentState = selectedGroupState(picker);
+            const created = await groupFormModal();
+            if (!created) return;
+            const selectedOrders = [...currentState.values()].map(item => Number(item.sort_order)).filter(Number.isFinite);
+            currentState.set(Number(created.id), {is_required: false, sort_order: selectedOrders.length ? Math.max(...selectedOrders) + 1 : 0});
+            renderGroupPicker(picker, [...picker._groups, created], currentState);
+            toast(created._message || 'Đã thêm và chọn nhóm biến thể');
+        };
+        picker.querySelectorAll('[data-edit-group]').forEach(button => button.onclick = async () => {
+            const group = picker._groups.find(item => Number(item.id) === Number(button.dataset.editGroup));
+            try {
+                const usage = await request(`/variant-groups/${group.id}/usage`);
+                if (!await confirmGroupEdit(group, usage.data.products_count)) return;
+                const updated = await groupFormModal(group);
+                if (!updated) return;
+                const currentState = selectedGroupState(picker);
+                renderGroupPicker(picker, picker._groups.map(item => Number(item.id) === Number(updated.id) ? {...item, ...updated} : item), currentState);
+                toast(updated._message || 'Đã cập nhật nhóm biến thể');
+            } catch (error) { toast(error.message, true); }
+        });
+        picker.querySelectorAll('[data-add-option]').forEach(button => button.onclick = () => addProductOptionRow(button.closest('.relation-row')));
+    }
+
+    function addProductOptionRow(row, option = {}) {
+        const container = row.querySelector('[data-option-rows]');
+        const element = document.createElement('div');
+        element.className = 'product-option-row';
+        element.innerHTML = `<button type="button" class="option-drag" draggable="true" title="Kéo để thay đổi thứ tự" aria-label="Kéo để thay đổi thứ tự">⠿</button><input type="hidden" data-option-field="id" value="${esc(option.id || '')}"><input type="hidden" data-option-field="sort_order" value="${option.sort_order ?? container.children.length}"><input class="input" data-option-field="option_code" value="${esc(option.option_code || '')}" placeholder="Mã, ví dụ: s" required><input class="input" data-option-field="option_name" value="${esc(option.option_name || '')}" placeholder="Tên, ví dụ: S" required><label class="option-active"><input type="checkbox" data-option-field="is_active" ${option.is_active === false ? '' : 'checked'}> Hoạt động</label><div class="option-row-actions"><button type="button" class="btn compact save-option">Lưu</button><button type="button" class="btn compact remove-option">Xóa</button></div>`;
+        const removeButton = element.querySelector('.remove-option');
+        removeButton.classList.add('icon-button', 'danger-icon');
+        removeButton.title = 'Xóa giá trị biến thể';
+        removeButton.setAttribute('aria-label', 'Xóa giá trị biến thể');
+        removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        element.querySelector('.save-option').onclick = async event => {
+            const configurationId = row.dataset.configurationId;
+            if (!configurationId) {
+                toast('Hãy lưu sản phẩm trước để tạo nhóm biến thể, sau đó mới lưu từng giá trị.', true);
+                return;
+            }
+            const codeInput = element.querySelector('[data-option-field="option_code"]');
+            const nameInput = element.querySelector('[data-option-field="option_name"]');
+            if (!codeInput.reportValidity() || !nameInput.reportValidity()) return;
+            normalizeProductOptionOrder(container);
+            const idInput = element.querySelector('[data-option-field="id"]');
+            const optionId = idInput.value;
+            const payload = {
+                product_variant_group_id: Number(configurationId),
+                option_code: codeInput.value.trim(),
+                option_name: nameInput.value.trim(),
+                sort_order: Number(element.querySelector('[data-option-field="sort_order"]').value),
+                is_active: element.querySelector('[data-option-field="is_active"]').checked,
+            };
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.textContent = 'Đang lưu...';
+            element.classList.remove('has-error');
+            element.removeAttribute('data-error');
+            try {
+                const result = await request(`/variant-options${optionId ? '/' + optionId : ''}`, {
+                    method: optionId ? 'PUT' : 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload),
+                });
+                idInput.value = result.data.id;
+                toast(result.message || (optionId ? 'Đã cập nhật giá trị biến thể' : 'Đã tạo giá trị biến thể'));
+            } catch (error) {
+                element.classList.add('has-error');
+                element.dataset.error = error.message;
+                toast(error.message, true);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Lưu';
+            }
+        };
+        element.querySelector('.remove-option').onclick = async event => {
+            const button = event.currentTarget;
+            const id = element.querySelector('[data-option-field="id"]').value;
+            const optionName = element.querySelector('[data-option-field="option_name"]').value;
+            if (!id) {
+                element.remove();
+                normalizeProductOptionOrder(container);
+                return;
+            }
+            if (!await confirmRemoveVariantOption(optionName)) return;
+            button.disabled = true;
+            try {
+                const result = await request(`/variant-options/${id}`, {method: 'DELETE'});
+                element.remove();
+                normalizeProductOptionOrder(container);
+                toast(result.message || 'Đã xóa giá trị biến thể');
+            } catch (error) {
+                button.disabled = false;
+                toast(error.message, true);
+            }
+        };
+        const dragHandle = element.querySelector('.option-drag');
+        dragHandle.addEventListener('dragstart', event => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', 'option');
+            const preview = element.cloneNode(true);
+            const rect = element.getBoundingClientRect();
+            preview.classList.add('option-drag-preview');
+            preview.style.width = `${rect.width}px`;
+            preview.style.height = `${rect.height}px`;
+            document.body.appendChild(preview);
+            event.dataTransfer.setDragImage(preview, 18, rect.height / 2);
+            element._dragPreview = preview;
+            requestAnimationFrame(() => element.classList.add('dragging'));
+        });
+        dragHandle.addEventListener('dragend', () => {
+            element.classList.remove('dragging');
+            element._dragPreview?.remove();
+            element._dragPreview = null;
+            normalizeProductOptionOrder(container);
+        });
+        setupProductOptionDropZone(container);
+        container.appendChild(element);
+        normalizeProductOptionOrder(container);
+    }
+
+    function setupProductOptionDropZone(container) {
+        if (container.dataset.sortableReady) return;
+        container.dataset.sortableReady = '1';
+        container.addEventListener('dragover', event => {
+            event.preventDefault();
+            const dragging = container.querySelector('.product-option-row.dragging');
+            if (!dragging) return;
+            const target = [...container.querySelectorAll('.product-option-row:not(.dragging)')]
+                .find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+            target ? container.insertBefore(dragging, target) : container.appendChild(dragging);
+        });
+    }
+
+    function normalizeProductOptionOrder(container) {
+        [...container.querySelectorAll('.product-option-row')].forEach((item, index) => {
+            item.querySelector('[data-option-field="sort_order"]').value = index;
+        });
+    }
+
+    function setProductOptions(row, options) {
+        row.querySelector('[data-option-rows]').innerHTML = '';
+        [...options].sort((first, second) => Number(first.sort_order || 0) - Number(second.sort_order || 0)).forEach(option => addProductOptionRow(row, option));
+    }
+
+    function setupCategoryPicker(picker, categories) {
+        const choice = picker.querySelector('[data-category-choice]');
+        const list = picker.querySelector('[data-category-selected]');
+        const inputs = picker.querySelector('[data-category-inputs]');
+        let selected = [];
+
+        const render = () => {
+            const selectedIds = new Set(selected.map(item => String(item.id)));
+            choice.innerHTML = `<option value="">${esc(choice.dataset.placeholder || '-- Chọn danh mục để thêm --')}</option>` + categories
+                .filter(item => !selectedIds.has(String(item[picker.dataset.value])))
+                .map(item => `<option value="${item[picker.dataset.value]}">${esc(item[picker.dataset.text])}</option>`).join('');
+            list.innerHTML = selected.length ? selected.map(item => `<div class="category-chip" data-category-id="${item.id}"><span>${esc(item.category_name)}</span><button type="button" class="category-chip-remove" data-remove-category="${item.id}" title="Gỡ danh mục" aria-label="Gỡ danh mục"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`).join('') : '<div class="category-empty">Chưa chọn danh mục nào.</div>';
+            inputs.innerHTML = selected.map(item => `<input type="hidden" name="${esc(picker.dataset.name)}[]" value="${item.id}">`).join('');
+            list.querySelectorAll('[data-remove-category]').forEach(button => button.onclick = () => {
+                selected = selected.filter(item => String(item.id) !== button.dataset.removeCategory);
+                render();
+            });
+        };
+
+        choice.onchange = () => {
+            if (!choice.value) return;
+            const category = categories.find(item => String(item[picker.dataset.value]) === choice.value);
+            if (category) selected.push({id: category[picker.dataset.value], category_name: category[picker.dataset.text]});
+            render();
+        };
+        picker._setSelected = items => {
+            selected = items.map(item => ({id: item.id, category_name: item.category_name}));
+            render();
+        };
+        render();
+    }
+
+    async function loadSources(form) {
+        await Promise.all([...form.querySelectorAll('[data-type="select_api"]')].map(async select => {
+            const result = await request(`/${select.dataset.source}?per_page=50`);
+            (result.data || []).forEach(item => select.add(new Option(item[select.dataset.text], item[select.dataset.value])));
+        }));
+        await Promise.all([...form.querySelectorAll('[data-type="multi_select_api"]')].map(async picker => {
+            const result = await request(`/${picker.dataset.source}?per_page=50`);
+            setupCategoryPicker(picker, result.data || []);
+        }));
+        await Promise.all([...form.querySelectorAll('.relation-picker')].map(async picker => {
+            if (picker.dataset.type === 'variant_options') {
+                picker.innerHTML = '<div class="relation-loading">Chọn sản phẩm để tải các giá trị biến thể.</div>';
+                return;
+            }
+            const result = await request(`/${picker.dataset.source}?per_page=50`);
+            const groups = result.data || [];
+            if (picker.dataset.type === 'product_variant_groups') {
+                renderGroupPicker(picker, groups);
+            }
+        }));
+        const productSelect = form.querySelector('[name="product_id"]');
+        if (productSelect) productSelect.addEventListener('change', () => loadProductContext(form, productSelect.value));
+    }
+
+    async function loadProductContext(form, productId) {
+        const groupSelect = form.querySelector('[data-type="product_group_select"]');
+        const optionPicker = form.querySelector('[data-type="variant_options"]');
+        if (!productId) {
+            if (groupSelect) groupSelect.innerHTML = '<option value="">-- Chọn sản phẩm trước --</option>';
+            if (optionPicker) optionPicker.innerHTML = '<div class="relation-loading">Chọn sản phẩm để tải các giá trị biến thể.</div>';
+            return;
+        }
+        const result = await request(`/products/${productId}`);
+        const configurations = result.data?.variant_groups || [];
+        if (groupSelect) {
+            const oldValue = groupSelect.value;
+            groupSelect.innerHTML = '<option value="">-- Chọn nhóm biến thể --</option>' + configurations.map(configuration => `<option value="${configuration.id}">${esc(configuration.group_name)}</option>`).join('');
+            groupSelect.value = oldValue;
+        }
+        if (optionPicker) {
+            optionPicker.innerHTML = configurations.length ? configurations.map(configuration => `<fieldset class="option-group"><legend>${esc(configuration.group_name)}</legend>${(configuration.options || []).map(option => `<label class="option-choice"><input type="checkbox" value="${option.id}" data-option-id> ${esc(option.option_name)} <small>(${esc(option.option_code)})</small></label>`).join('') || '<small>Chưa có giá trị cho sản phẩm này</small>'}</fieldset>`).join('') : '<div class="relation-loading">Sản phẩm chưa cấu hình nhóm biến thể.</div>';
+        }
+    }
+
+    function setupGroupPicker(picker) {
+        const rows = [...picker.querySelectorAll('.relation-row')];
+        const count = picker.querySelector('[data-selected-count]');
+        const noResult = picker.querySelector('[data-no-result]');
+        const searchInput = picker.querySelector('[data-group-search]');
+        const searchResults = picker.querySelector('[data-group-search-results]');
+        const searchToolbar = picker.querySelector('.relation-toolbar');
+        const availableList = picker.querySelector('[data-group-list]');
+        const selectedList = picker.querySelector('[data-selected-group-list]');
+        const selectedEmpty = picker.querySelector('[data-selected-empty]');
+        rows.forEach(row => {
+            const orderInput = row.querySelector('.relation-order');
+            orderInput.type = 'hidden';
+        });
+        const update = () => {
+            const selected = rows.filter(row => row.querySelector('[data-group-check]').checked);
+            if (count) count.textContent = `Đã chọn ${selected.length} nhóm`;
+            rows.forEach(row => {
+                const checked = row.querySelector('[data-group-check]').checked;
+                if (!checked) availableList?.appendChild(row);
+                row.classList.toggle('selected', checked);
+                row.querySelector('[data-required]').disabled = !checked;
+                row.querySelector('.relation-order').disabled = !checked;
+                row.querySelector('[data-product-options]').hidden = !checked;
+                if (!checked) row.querySelector('[data-required]').checked = false;
+            });
+            selected
+                .sort((first, second) => Number(first.querySelector('.relation-order').value || 0) - Number(second.querySelector('.relation-order').value || 0))
+                .forEach(row => selectedList?.appendChild(row));
+            normalizeSelectedGroupOrder(selectedList);
+            if (selectedEmpty) selectedEmpty.hidden = selected.length > 0;
+            filterGroupSearch();
+        };
+        rows.forEach(row => row.querySelector('[data-group-check]').addEventListener('change', event => {
+            const row = event.target.closest('.relation-row');
+            const order = row.querySelector('.relation-order');
+            if (event.target.checked && order.value === '') {
+                const selectedOrders = rows
+                    .filter(item => item !== row && item.querySelector('[data-group-check]').checked)
+                    .map(item => Number(item.querySelector('.relation-order').value))
+                    .filter(Number.isFinite);
+                order.value = selectedOrders.length ? Math.max(...selectedOrders) + 1 : 0;
+            }
+            if (!event.target.checked) order.value = '';
+            update();
+        }));
+        rows.forEach(row => {
+            row.querySelector('[data-select-group]')?.addEventListener('click', () => {
+                const checkbox = row.querySelector('[data-group-check]');
+                checkbox.checked = true;
+                checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+            row.querySelector('[data-remove-group]')?.addEventListener('click', async event => {
+                const removeButton = event.currentTarget;
+                const checkbox = row.querySelector('[data-group-check]');
+                const group = picker._groups.find(item => Number(item.id) === Number(checkbox.value));
+                if (!await confirmRemoveProductGroup(group)) return;
+                const configurationId = row.dataset.configurationId;
+                const productId = document.querySelector('.module-form')?.dataset.recordId;
+                if (configurationId && productId) {
+                    removeButton.disabled = true;
+                    try {
+                        const result = await request(`/products/${productId}/variant-groups/${configurationId}`, {method: 'DELETE'});
+                        row.dataset.configurationId = '';
+                        toast(result.message || 'Đã xóa nhóm biến thể khỏi sản phẩm');
+                    } catch (error) {
+                        removeButton.disabled = false;
+                        toast(error.message, true);
+                        return;
+                    }
+                }
+                checkbox.checked = false;
+                checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+            row.querySelector('[data-required]')?.addEventListener('change', async event => {
+                const input = event.currentTarget;
+                const configurationId = row.dataset.configurationId;
+                const productId = document.querySelector('.module-form')?.dataset.recordId;
+                if (!configurationId || !productId) return;
+                const nextValue = input.checked;
+                input.disabled = true;
+                try {
+                    const result = await request(`/products/${productId}/variant-groups/${configurationId}`, {
+                        method: 'PATCH',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({is_required: nextValue}),
+                    });
+                    toast(result.message || 'Đã cập nhật trạng thái bắt buộc');
+                } catch (error) {
+                    input.checked = !nextValue;
+                    toast(error.message, true);
+                } finally {
+                    input.disabled = false;
+                }
+            });
+            const dragHandle = row.querySelector('.group-drag');
+            dragHandle?.addEventListener('dragstart', event => {
+                if (!row.querySelector('[data-group-check]').checked) {
+                    event.preventDefault();
+                    return;
+                }
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', 'variant-group');
+                const preview = row.cloneNode(true);
+                const rect = row.getBoundingClientRect();
+                preview.classList.add('group-drag-preview');
+                preview.style.width = `${rect.width}px`;
+                document.body.appendChild(preview);
+                event.dataTransfer.setDragImage(preview, 18, 30);
+                row._dragPreview = preview;
+                requestAnimationFrame(() => row.classList.add('group-dragging'));
+            });
+            dragHandle?.addEventListener('dragend', () => {
+                row.classList.remove('group-dragging');
+                row._dragPreview?.remove();
+                row._dragPreview = null;
+                normalizeSelectedGroupOrder(selectedList);
+            });
+        });
+        selectedList?.addEventListener('dragover', event => {
+            event.preventDefault();
+            const dragging = selectedList.querySelector('.relation-row.group-dragging');
+            if (!dragging) return;
+            const target = [...selectedList.querySelectorAll('.relation-row:not(.group-dragging)')]
+                .find(item => event.clientY < item.getBoundingClientRect().top + item.offsetHeight / 2);
+            target ? selectedList.insertBefore(dragging, target) : selectedList.appendChild(dragging);
+        });
+        const filterGroupSearch = () => {
+            const keyword = searchInput?.value.trim().toLowerCase() || '';
+            let visible = 0;
+            rows.forEach(row => {
+                if (row.querySelector('[data-group-check]').checked) {
+                    row.hidden = false;
+                    return;
+                }
+                const showRow = keyword !== '' && row.dataset.searchText.includes(keyword);
+                row.hidden = !showRow;
+                if (showRow) visible++;
+            });
+            if (searchResults) searchResults.hidden = keyword === '';
+            if (searchResults && searchToolbar) searchResults.style.top = `${searchToolbar.offsetHeight + 6}px`;
+            if (noResult) noResult.hidden = keyword === '' || visible !== 0;
+        };
+        searchInput?.addEventListener('input', filterGroupSearch);
+        document.addEventListener('click', event => {
+            if (!picker.contains(event.target) && searchResults) searchResults.hidden = true;
+        });
+        searchInput?.addEventListener('focus', filterGroupSearch);
+        picker._updateSelection = update;
+        update();
+    }
+
+    function normalizeSelectedGroupOrder(container) {
+        if (!container) return;
+        [...container.querySelectorAll('.relation-row')].forEach((row, index) => {
+            row.querySelector('.relation-order').value = index + 1;
+        });
+    }
+
+    async function fill(form, row) {
+        form.querySelectorAll('[name]').forEach(input => {
+            const name = input.name.replace(/\[\]$/, '');
+            const value = row[name];
+            if (input.type === 'file' || value == null) return;
+            if (input.type === 'checkbox') input.checked = !!value;
+            else if (input.dataset.type === 'json') input.value = JSON.stringify(value);
+            else input.value = value;
+        });
+        if (row.product_id) {
+            await loadProductContext(form, row.product_id);
+            const groupSelect = form.querySelector('[data-type="product_group_select"]');
+            if (groupSelect && row.product_variant_group_id) groupSelect.value = row.product_variant_group_id;
+        }
+        const categoryPicker = form.querySelector('[data-type="multi_select_api"]');
+        if (categoryPicker) categoryPicker._setSelected?.(row.categories || []);
+        const groupPicker = form.querySelector('[data-type="product_variant_groups"]');
+        if (groupPicker) (row.variant_groups || []).forEach(selected => {
+            const checkbox = groupPicker.querySelector(`[data-group-check][value="${selected.variant_group_id}"]`);
+            if (!checkbox) return;
+            const line = checkbox.closest('.relation-row');
+            line.dataset.configurationId = selected.id || '';
+            checkbox.checked = true;
+            line.querySelector('[data-required]').checked = !!selected.is_required;
+            line.querySelector('.relation-order').value = selected.sort_order ?? 0;
+            setProductOptions(line, selected.options || []);
+        });
+        if (groupPicker?._updateSelection) groupPicker._updateSelection();
+        form.querySelectorAll('[data-multi-upload]').forEach(upload => upload._showExisting?.(row[upload.dataset.fieldName] || []));
+        const optionPicker = form.querySelector('[data-type="variant_options"]');
+        if (optionPicker) (row.options || []).forEach(option => {
+            const checkbox = optionPicker.querySelector(`[data-option-id][value="${option.id}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+
+    function appendJson(formData, name, value) {
+        if (!Array.isArray(value)) return;
+        value.forEach((item, index) => typeof item === 'object'
+            ? Object.entries(item).forEach(([key, data]) => formData.append(`${name}[${index}][${key}]`, data))
+            : formData.append(`${name}[]`, item));
+    }
+
+    function serializeRelations(form, formData) {
+        const groupPicker = form.querySelector('[data-type="product_variant_groups"]');
+        if (groupPicker) {
+            formData.delete('variant_groups');
+            [...groupPicker.querySelectorAll('[data-group-check]:checked')].forEach((checkbox, index) => {
+                const line = checkbox.closest('.relation-row');
+                formData.append(`variant_groups[${index}][variant_group_id]`, checkbox.value);
+                formData.append(`variant_groups[${index}][is_required]`, line.querySelector('[data-required]').checked ? '1' : '0');
+                formData.append(`variant_groups[${index}][sort_order]`, line.querySelector('.relation-order').value === '' ? index : line.querySelector('.relation-order').value);
+                formData.append(`variant_groups[${index}][options_present]`, '1');
+                normalizeProductOptionOrder(line.querySelector('[data-option-rows]'));
+                line.querySelectorAll('.product-option-row').forEach((optionRow, optionIndex) => {
+                    ['id', 'option_code', 'option_name', 'sort_order'].forEach(field => {
+                        const value = optionRow.querySelector(`[data-option-field="${field}"]`).value;
+                        if (field !== 'id' || value) formData.append(`variant_groups[${index}][options][${optionIndex}][${field}]`, value);
+                    });
+                    formData.append(`variant_groups[${index}][options][${optionIndex}][is_active]`, optionRow.querySelector('[data-option-field="is_active"]').checked ? '1' : '0');
+                });
+            });
+        }
+        const optionPicker = form.querySelector('[data-type="variant_options"]');
+        if (optionPicker) {
+            formData.delete('option_ids');
+            optionPicker.querySelectorAll('[data-option-id]:checked').forEach(checkbox => formData.append('option_ids[]', checkbox.value));
+        }
+    }
+
+    async function formPage() {
+        const form = document.querySelector('.module-form');
+        const endpoint = form.dataset.endpoint;
+        const id = form.dataset.recordId;
+        const indexUrl = form.dataset.indexUrl;
+        try {
+            setupMultiUploads(form);
+            await loadSources(form);
+            if (id) { const result = await request(`/${endpoint}/${id}`); await fill(form, result.data || {}); }
+        } catch (error) { toast(error.message, true); }
+        form.onsubmit = async event => {
+            event.preventDefault();
+            try {
+                const formData = new FormData(form);
+                form.querySelectorAll('.field > .check input[type="checkbox"]').forEach(input => formData.set(input.name, input.checked ? '1' : '0'));
+                form.querySelectorAll('[data-type="json"]').forEach(input => { formData.delete(input.name); if (input.value.trim()) appendJson(formData, input.name, JSON.parse(input.value)); });
+                form.querySelectorAll('[data-type="lines"]').forEach(input => { formData.delete(input.name); input.value.split('\n').map(v => v.trim()).filter(Boolean).forEach(v => formData.append(`${input.name}[]`, v)); });
+                serializeRelations(form, formData);
+                if (id) formData.append('_method', 'PUT');
+                const result = await request(`/${endpoint}${id ? '/' + id : ''}`, {method: 'POST', body: formData});
+                flashToast(result.message || (id ? 'Đã cập nhật dữ liệu' : 'Đã tạo dữ liệu'));
+                location.href = indexUrl;
+            } catch (error) { toast(error.message, true); }
+        };
+    }
+
+    function dashboard() {
+        document.querySelectorAll('[data-dashboard] [data-endpoint]').forEach(async card => {
+            try { const result = await request(`/${card.dataset.endpoint}?per_page=1`); card.querySelector('strong').textContent = result.meta?.total ?? result.data?.length ?? 0; }
+            catch { card.querySelector('strong').textContent = '—'; }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', common);
+    return {request, indexPage, formPage, dashboard};
+})();

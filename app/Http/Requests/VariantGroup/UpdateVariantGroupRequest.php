@@ -33,8 +33,6 @@ class UpdateVariantGroupRequest extends FormRequest
                 Rule::unique('variant_groups', 'group_code')->ignore($this->route('id')),
             ],
             'group_name' => 'sometimes|string|max:255',
-            'option_ids' => 'sometimes|array',
-            'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
         ];
     }
 

@@ -27,7 +27,7 @@ class VariantOptionController extends Controller
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
-     *     @OA\Parameter(name="variant_group_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="product_variant_group_id", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Thành công"),
      *     @OA\Response(response=401, description="Chưa xác thực")
@@ -38,11 +38,11 @@ class VariantOptionController extends Controller
         $perPage = (int) $request->query('per_page', Helpers::LIMIT_PER_PAGE);
         $perPage = $perPage > 0 ? min($perPage, Helpers::LIMIT_PER_PAGE) : Helpers::LIMIT_PER_PAGE;
         $search = (string) $request->query('search', '');
-        $variantGroupId = $request->filled('variant_group_id')
-            ? (int) $request->query('variant_group_id')
+        $configurationId = $request->filled('product_variant_group_id')
+            ? (int) $request->query('product_variant_group_id')
             : null;
 
-        $variantOptions = $this->variantOptionService->paginate($perPage, $search, $variantGroupId);
+        $variantOptions = $this->variantOptionService->paginate($perPage, $search, $configurationId);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,

@@ -28,8 +28,6 @@ class StoreVariantGroupRequest extends FormRequest
         return [
             'group_code' => 'required|string|max:100|unique:variant_groups,group_code',
             'group_name' => 'required|string|max:255',
-            'option_ids' => 'nullable|array',
-            'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
         ];
     }
 

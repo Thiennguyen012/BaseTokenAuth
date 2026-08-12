@@ -117,6 +117,34 @@ class VariantGroupController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/variant-groups/{id}/usage",
+     *     summary="Số sản phẩm đang sử dụng nhóm biến thể",
+     *     tags={"Variant Groups"}, security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Thành công"),
+     *     @OA\Response(response=404, description="Không tồn tại")
+     * )
+     */
+    public function usage(string $id): JsonResponse
+    {
+        $count = $this->variantGroupService->usageCount($id);
+
+        if ($count === null) {
+            return $this->errorResponse(
+                __('messages.common.not_found', ['entity' => __('messages.entities.variant_group')]),
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return response()->json([
+            'status_code' => Response::HTTP_OK,
+            'message' => 'Lấy số sản phẩm sử dụng nhóm biến thể thành công',
+            'data' => ['products_count' => $count],
+        ]);
+    }
+
+    /**
      * @OA\Put(
      *     path="/api/variant-groups/{id}",
      *     summary="Cập nhật nhóm biến thể",

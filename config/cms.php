@@ -1,0 +1,90 @@
+<?php
+
+return [
+    'modules' => [
+        'products' => [
+            'title' => 'Sản phẩm', 'description' => 'Quản lý sản phẩm, trạng thái và hình ảnh.', 'api' => 'products',
+            'filters' => [['name' => 'category_ids', 'label' => 'Chọn danh mục để lọc', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name', 'multiple' => true]],
+            'columns' => ['product_name' => 'Tên sản phẩm', 'sku' => 'SKU', 'category_names' => 'Danh mục', 'is_active' => 'Hoạt động', 'is_featured' => 'Nổi bật'],
+            'fields' => [
+                ['name' => 'product_name', 'label' => 'Tên sản phẩm', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên sản phẩm'],
+                ['name' => 'sku', 'label' => 'SKU', 'type' => 'text', 'placeholder' => 'Nhập mã SKU'],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea', 'placeholder' => 'Nhập mô tả chi tiết về sản phẩm...'],
+                ['name' => 'category_ids', 'label' => 'Danh mục sản phẩm', 'type' => 'multi_select_api', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name', 'placeholder' => '-- Chọn danh mục để thêm --'],
+                ['name' => 'is_active', 'label' => 'Đang hoạt động', 'type' => 'checkbox'],
+                ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
+                ['name' => 'variant_groups', 'label' => 'Nhóm biến thể', 'type' => 'product_variant_groups', 'source' => 'variant-groups'],
+                ['name' => 'images', 'label' => 'Hình ảnh', 'type' => 'files', 'accept' => 'image/jpeg,image/png,image/webp'],
+            ],
+        ],
+        'categories' => [
+            'title' => 'Danh mục sản phẩm', 'description' => 'Tổ chức danh mục cho cửa hàng.', 'api' => 'categories',
+            'columns' => ['category_name' => 'Tên danh mục', 'description' => 'Mô tả'],
+            'fields' => [
+                ['name' => 'category_name', 'label' => 'Tên danh mục', 'type' => 'text', 'required' => true],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea'],
+            ],
+        ],
+        'variant-groups' => [
+            'title' => 'Nhóm biến thể', 'description' => 'Ví dụ: màu sắc, kích thước.', 'api' => 'variant-groups',
+            'columns' => ['group_code' => 'Mã nhóm', 'group_name' => 'Tên nhóm'],
+            'fields' => [
+                ['name' => 'group_code', 'label' => 'Mã nhóm', 'type' => 'text', 'required' => true],
+                ['name' => 'group_name', 'label' => 'Tên nhóm', 'type' => 'text', 'required' => true],
+            ],
+        ],
+        'variant-options' => [
+            'title' => 'Giá trị biến thể', 'description' => 'Các giá trị thuộc từng nhóm biến thể.', 'api' => 'variant-options',
+            'columns' => ['option_code' => 'Mã', 'option_name' => 'Tên', 'product_id' => 'ID sản phẩm', 'variant_group_id' => 'ID nhóm', 'sort_order' => 'Thứ tự', 'is_active' => 'Hoạt động'],
+            'fields' => [
+                ['name' => 'product_id', 'label' => 'Sản phẩm', 'type' => 'select_api', 'source' => 'products', 'value' => 'id', 'text' => 'product_name', 'required' => true],
+                ['name' => 'product_variant_group_id', 'label' => 'Nhóm biến thể của sản phẩm', 'type' => 'product_group_select', 'required' => true],
+                ['name' => 'option_code', 'label' => 'Mã option', 'type' => 'text', 'required' => true],
+                ['name' => 'option_name', 'label' => 'Tên option', 'type' => 'text', 'required' => true],
+                ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
+                ['name' => 'is_active', 'label' => 'Hoạt động', 'type' => 'checkbox'],
+            ],
+        ],
+        'product-variants' => [
+            'title' => 'Biến thể sản phẩm', 'description' => 'Quản lý SKU, giá, tồn kho và hình ảnh.', 'api' => 'product-variants',
+            'columns' => ['sku' => 'SKU', 'product_id' => 'ID sản phẩm', 'price' => 'Giá', 'stock' => 'Tồn kho', 'is_active' => 'Hoạt động'],
+            'fields' => [
+                ['name' => 'product_id', 'label' => 'Sản phẩm', 'type' => 'select_api', 'source' => 'products', 'value' => 'id', 'text' => 'product_name', 'required' => true],
+                ['name' => 'sku', 'label' => 'SKU', 'type' => 'text', 'required' => true],
+                ['name' => 'price', 'label' => 'Giá', 'type' => 'number'],
+                ['name' => 'stock', 'label' => 'Tồn kho', 'type' => 'number'],
+                ['name' => 'is_active', 'label' => 'Hoạt động', 'type' => 'checkbox'],
+                ['name' => 'option_ids', 'label' => 'Giá trị biến thể', 'type' => 'variant_options', 'required' => true],
+                ['name' => 'images', 'label' => 'Hình ảnh', 'type' => 'files', 'accept' => 'image/jpeg,image/png,image/webp'],
+            ],
+        ],
+        'page-contents' => [
+            'title' => 'Trang nội dung', 'description' => 'Thông tin chung của từng trang.', 'api' => 'page-contents',
+            'columns' => ['title' => 'Tên trang', 'slug' => 'Slug'],
+            'fields' => [
+                ['name' => 'title', 'label' => 'Tên trang', 'type' => 'text', 'required' => true],
+                ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'required' => true],
+            ],
+        ],
+        'page-sections' => [
+            'title' => 'Bố cục / Section', 'description' => 'Sắp xếp các section trong trang.', 'api' => 'page-sections',
+            'columns' => ['title' => 'Tiêu đề', 'page_content_id' => 'ID trang', 'subtitle' => 'Phụ đề', 'sort_order' => 'Thứ tự'],
+            'fields' => [
+                ['name' => 'page_content_id', 'label' => 'ID trang', 'type' => 'number', 'required' => true],
+                ['name' => 'title', 'label' => 'Tiêu đề', 'type' => 'text'], ['name' => 'subtitle', 'label' => 'Phụ đề', 'type' => 'text'],
+                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'textarea'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
+                ['name' => 'files', 'label' => 'Ảnh / video', 'type' => 'files'], ['name' => 'video_urls', 'label' => 'URL video (mỗi dòng một URL)', 'type' => 'lines'],
+            ],
+        ],
+        'section-items' => [
+            'title' => 'Nội dung Section', 'description' => 'Quản lý item trong từng section.', 'api' => 'section-items',
+            'columns' => ['title' => 'Tiêu đề', 'page_section_id' => 'ID section', 'subtitle' => 'Phụ đề', 'sort_order' => 'Thứ tự'],
+            'fields' => [
+                ['name' => 'page_section_id', 'label' => 'ID section', 'type' => 'number', 'required' => true],
+                ['name' => 'title', 'label' => 'Tiêu đề', 'type' => 'text'], ['name' => 'subtitle', 'label' => 'Phụ đề', 'type' => 'text'],
+                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'textarea'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
+                ['name' => 'files', 'label' => 'Ảnh / video', 'type' => 'files'], ['name' => 'video_urls', 'label' => 'URL video (mỗi dòng một URL)', 'type' => 'lines'],
+            ],
+        ],
+    ],
+];

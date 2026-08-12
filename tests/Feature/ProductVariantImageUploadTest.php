@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ProductVariants\ProductVariant;
 use App\Models\Products\Product;
+use App\Models\Products\ProductVariantGroup;
 use App\Models\Variants\VariantGroup;
 use App\Services\ProductVariant\ProductVariantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,8 +63,12 @@ class ProductVariantImageUploadTest extends TestCase
     {
         $product = Product::query()->create(['product_name' => 'T-shirt']);
         $group = VariantGroup::query()->create(['group_code' => 'color', 'group_name' => 'Color']);
-        $option = $group->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
-        $product->variantGroups()->attach($group->id, ['is_required' => true]);
+        $configuration = ProductVariantGroup::query()->create([
+            'product_id' => $product->id,
+            'variant_group_id' => $group->id,
+            'is_required' => true,
+        ]);
+        $option = $configuration->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
 
         return [$product, $option];
     }

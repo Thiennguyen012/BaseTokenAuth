@@ -1,0 +1,1 @@
+@include('cms.shared.fields')

@@ -10,6 +10,8 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="VariantOptionResource",
  *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="product_variant_group_id", type="integer"),
+ *     @OA\Property(property="product_id", type="integer"),
  *     @OA\Property(property="variant_group_id", type="integer"),
  *     @OA\Property(property="option_code", type="string"),
  *     @OA\Property(property="option_name", type="string"),
@@ -25,7 +27,9 @@ class VariantOptionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'variant_group_id' => $this->variant_group_id,
+            'product_variant_group_id' => $this->product_variant_group_id,
+            'product_id' => $this->whenLoaded('productVariantGroup', fn () => $this->productVariantGroup->product_id),
+            'variant_group_id' => $this->whenLoaded('productVariantGroup', fn () => $this->productVariantGroup->variant_group_id),
             'option_code' => $this->option_code,
             'option_name' => $this->option_name,
             'sort_order' => $this->sort_order,

@@ -2,16 +2,19 @@
 
 namespace App\Models\Variants;
 
+use App\Models\Products\ProductVariantGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\ProductVariants\ProductVariant;
 
 class VariantOption extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'variant_group_id',
+        'product_variant_group_id',
         'option_code',
         'option_name',
         'sort_order',
@@ -21,14 +24,20 @@ class VariantOption extends Model
     protected function casts(): array
     {
         return [
-            'variant_group_id' => 'integer',
+            'product_variant_group_id' => 'integer',
             'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
     }
 
-    public function group(): BelongsTo
+    public function productVariantGroup(): BelongsTo
     {
-        return $this->belongsTo(VariantGroup::class, 'variant_group_id');
+        return $this->belongsTo(ProductVariantGroup::class);
+    }
+
+    public function productVariants(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductVariant::class, 'product_variant_values')
+            ->withTimestamps();
     }
 }

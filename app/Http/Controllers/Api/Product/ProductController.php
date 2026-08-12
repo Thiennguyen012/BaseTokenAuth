@@ -32,6 +32,7 @@ class ProductController extends Controller
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="category_ids[]", in="query", description="Lọc theo nhiều danh mục (AND); sản phẩm phải thuộc tất cả danh mục đã chọn", @OA\Schema(type="array", @OA\Items(type="integer"))),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Thành công"),
      *     @OA\Response(response=401, description="Chưa xác thực")
@@ -42,8 +43,9 @@ class ProductController extends Controller
         $perPage = (int) $request->query('per_page', Helpers::LIMIT_PER_PAGE);
         $perPage = $perPage > 0 ? min($perPage, Helpers::LIMIT_PER_PAGE) : Helpers::LIMIT_PER_PAGE;
         $search = $request->query('search', '');
+        $categoryIds = array_values(array_unique(array_filter(array_map('intval', (array) $request->query('category_ids', [])))));
 
-        $products = $this->productService->paginate($perPage, $search);
+        $products = $this->productService->paginate($perPage, $search, $categoryIds);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,
@@ -200,6 +202,64 @@ class ProductController extends Controller
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e, __('messages.common.delete_error', ['entity' => __('messages.entities.product')]));
+        }
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/products/{id}/variant-groups/{configurationId}",
+     *     summary="Gỡ nhóm biến thể khỏi sản phẩm",
+     *     tags={"Products"}, security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="configurationId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Đã gỡ nhóm"),
+     *     @OA\Response(response=404, description="Không tồn tại"),
+     *     @OA\Response(response=422, description="Đang được sử dụng")
+     * )
+     */
+    public function destroyVariantGroup(string $id, string $configurationId): JsonResponse
+    {
+        try {
+            $product = $this->productService->find($id);
+            if (!$product) return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+            $this->productService->removeVariantGroup($product, (int) $configurationId);
+
+            return response()->json(['status_code' => Response::HTTP_OK, 'message' => 'Đã gỡ nhóm biến thể khỏi sản phẩm.']);
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Không thể gỡ nhóm biến thể khỏi sản phẩm.');
+        }
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/products/{id}/variant-groups/{configurationId}",
+     *     summary="Cập nhật cấu hình nhóm biến thể của sản phẩm",
+     *     tags={"Products"}, security={{"sanctum":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="configurationId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         @OA\Property(property="is_required", type="boolean")
+     *     )),
+     *     @OA\Response(response=200, description="Đã cập nhật"),
+     *     @OA\Response(response=404, description="Không tồn tại"),
+     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
+     * )
+     */
+    public function updateVariantGroup(Request $request, string $id, string $configurationId): JsonResponse
+    {
+        $data = $request->validate(['is_required' => ['required', 'boolean']]);
+        $product = $this->productService->find($id);
+        if (!$product) return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+
+        try {
+            $this->productService->updateVariantGroup($product, (int) $configurationId, $data);
+
+            return response()->json([
+                'status_code' => Response::HTTP_OK,
+                'message' => 'Đã cập nhật trạng thái bắt buộc của nhóm biến thể.',
+            ]);
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Không thể cập nhật nhóm biến thể của sản phẩm.');
         }
     }
 }

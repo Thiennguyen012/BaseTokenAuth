@@ -11,8 +11,8 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Schema(
  *     schema="StoreVariantOptionRequest",
- *     required={"variant_group_id","option_code","option_name"},
- *     @OA\Property(property="variant_group_id", type="integer", example=1),
+ *     required={"product_variant_group_id","option_code","option_name"},
+ *     @OA\Property(property="product_variant_group_id", type="integer", example=1),
  *     @OA\Property(property="option_code", type="string", maxLength=100, example="red"),
  *     @OA\Property(property="option_name", type="string", maxLength=255, example="Màu đỏ"),
  *     @OA\Property(property="sort_order", type="integer", minimum=0, nullable=true),
@@ -28,15 +28,15 @@ class StoreVariantOptionRequest extends FormRequest
 
     public function rules(): array
     {
-        $variantGroupId = $this->input('variant_group_id');
+        $configurationId = $this->input('product_variant_group_id');
 
         return [
-            'variant_group_id' => 'required|exists:variant_groups,id',
+            'product_variant_group_id' => 'required|exists:product_variant_groups,id',
             'option_code' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('variant_options', 'option_code')->where(fn($query) => $query->where('variant_group_id', $variantGroupId)),
+                Rule::unique('variant_options', 'option_code')->where(fn($query) => $query->where('product_variant_group_id', $configurationId)),
             ],
             'option_name' => 'required|string|max:255',
             'sort_order' => 'nullable|integer|min:0',
@@ -47,8 +47,8 @@ class StoreVariantOptionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'variant_group_id.required' => __('validation.custom.variant_option.variant_group_id.required'),
-            'variant_group_id.exists' => __('validation.custom.variant_option.variant_group_id.exists'),
+            'product_variant_group_id.required' => __('validation.custom.variant_option.variant_group_id.required'),
+            'product_variant_group_id.exists' => __('validation.custom.variant_option.variant_group_id.exists'),
             'option_code.required' => __('validation.custom.variant_option.option_code.required'),
             'option_code.string' => __('validation.custom.variant_option.option_code.string'),
             'option_code.max' => __('validation.custom.variant_option.option_code.max'),

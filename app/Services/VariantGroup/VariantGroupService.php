@@ -3,7 +3,6 @@
 namespace App\Services\VariantGroup;
 
 use App\Repositories\VariantGroup\VariantGroupInterface;
-use App\Models\Variants\VariantOption;
 use Illuminate\Support\Facades\DB;
 
 class VariantGroupService
@@ -25,7 +24,7 @@ class VariantGroupService
             $where,
             ['group_name' => 'asc', 'id' => 'asc'],
             ['*'],
-            ['options'],
+            [],
             $limit
         );
     }
@@ -36,49 +35,38 @@ class VariantGroupService
             ['id' => $id],
             [],
             ['*'],
-            ['options']
+            []
         );
+    }
+
+    public function usageCount($id): ?int
+    {
+        $group = $this->variantGroupRepository->find($id);
+
+        return $group ? $group->products()->count() : null;
     }
 
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $optionIds = $data['option_ids'] ?? [];
             unset($data['option_ids']);
-
-            $group = $this->variantGroupRepository->create($data);
-
-            if (!empty($optionIds)) {
-                VariantOption::query()
-                    ->whereIn('id', $optionIds)
-                    ->update(['variant_group_id' => $group->id]);
-            }
-
-            return $group->load('options');
+            return $this->variantGroupRepository->create($data);
         });
     }
 
     public function update($group, array $data)
     {
         return DB::transaction(function () use ($group, $data) {
-            $hasOptionIds = array_key_exists('option_ids', $data);
-            $optionIds = $data['option_ids'] ?? [];
             unset($data['option_ids']);
-
-            $group = $this->variantGroupRepository->edit($group, $data);
-
-            if ($hasOptionIds && !empty($optionIds)) {
-                VariantOption::query()
-                    ->whereIn('id', $optionIds)
-                    ->update(['variant_group_id' => $group->id]);
-            }
-
-            return $group->load('options');
+            return $this->variantGroupRepository->edit($group, $data);
         });
     }
 
     public function delete($group)
     {
-        return $this->variantGroupRepository->delete($group);
+        return DB::transaction(function () use ($group) {
+            $group->productConfigurations()->delete();
+            return $this->variantGroupRepository->delete($group);
+        });
     }
 }

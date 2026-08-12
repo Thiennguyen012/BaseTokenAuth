@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Products\Product;
+use App\Models\Products\ProductVariantGroup;
 use App\Models\Variants\VariantGroup;
 use App\Models\Variants\VariantOption;
 use App\Services\ProductVariant\ProductVariantService;
@@ -53,8 +54,10 @@ class ProductVariantServiceTest extends TestCase
     public function test_it_rejects_an_option_from_an_unconfigured_group(): void
     {
         [$product, $colorRed, $sizeM] = $this->catalog();
+        $otherProduct = Product::query()->create(['product_name' => 'Other']);
         $material = VariantGroup::query()->create(['group_code' => 'material', 'group_name' => 'Material']);
-        $cotton = $material->options()->create(['option_code' => 'cotton', 'option_name' => 'Cotton']);
+        $materialConfiguration = ProductVariantGroup::query()->create(['product_id' => $otherProduct->id, 'variant_group_id' => $material->id]);
+        $cotton = $materialConfiguration->options()->create(['option_code' => 'cotton', 'option_name' => 'Cotton']);
 
         $this->expectException(ValidationException::class);
         app(ProductVariantService::class)->create([
@@ -122,12 +125,10 @@ class ProductVariantServiceTest extends TestCase
         $product = Product::query()->create(['product_name' => 'T-shirt']);
         $color = VariantGroup::query()->create(['group_code' => 'color', 'group_name' => 'Color']);
         $size = VariantGroup::query()->create(['group_code' => 'size', 'group_name' => 'Size']);
-        $colorRed = $color->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
-        $sizeM = $size->options()->create(['option_code' => 'm', 'option_name' => 'M']);
-        $product->variantGroups()->attach([
-            $color->id => ['is_required' => true],
-            $size->id => ['is_required' => true],
-        ]);
+        $colorConfiguration = ProductVariantGroup::query()->create(['product_id' => $product->id, 'variant_group_id' => $color->id, 'is_required' => true]);
+        $sizeConfiguration = ProductVariantGroup::query()->create(['product_id' => $product->id, 'variant_group_id' => $size->id, 'is_required' => true]);
+        $colorRed = $colorConfiguration->options()->create(['option_code' => 'red', 'option_name' => 'Red']);
+        $sizeM = $sizeConfiguration->options()->create(['option_code' => 'm', 'option_name' => 'M']);
 
         return [$product, $colorRed, $sizeM];
     }
