@@ -4,6 +4,7 @@ use App\Http\Controllers\Cms\CategoryController;
 use App\Http\Controllers\Cms\AuthController;
 use App\Http\Controllers\Cms\DashboardController;
 use App\Http\Controllers\Cms\PageContentController;
+use App\Http\Controllers\Cms\PageConfigController;
 use App\Http\Controllers\Cms\PageSectionController;
 use App\Http\Controllers\Cms\ProductController;
 use App\Http\Controllers\Cms\ProductVariantController;
@@ -27,6 +28,7 @@ Route::prefix('cms')->name('cms.')->group(function () {
         Route::resource('variant-options', VariantOptionController::class)->only(['index', 'create', 'edit']);
         Route::resource('product-variants', ProductVariantController::class)->only(['index', 'create', 'edit']);
         Route::resource('page-contents', PageContentController::class)->only(['index', 'create', 'edit']);
+        Route::get('page-configs', [PageConfigController::class, 'index'])->name('page-configs.index');
         Route::resource('page-sections', PageSectionController::class)->only(['index', 'create', 'edit']);
         Route::resource('section-items', SectionItemController::class)->only(['index', 'create', 'edit']);
     });

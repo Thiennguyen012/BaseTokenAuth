@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProductVariant\ProductVariantController;
 use App\Http\Controllers\Api\VariantGroup\VariantGroupController;
 use App\Http\Controllers\Api\VariantOption\VariantOptionController;
 use App\Http\Controllers\Api\PageContent\PageContentController;
+use App\Http\Controllers\Api\PageConfig\PageConfigController;
 use App\Http\Controllers\Api\PageSection\PageSectionController;
 use App\Http\Controllers\Api\SectionItem\SectionItemController;
 use App\Http\Controllers\Api\File\FileController;
@@ -83,6 +84,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [PageContentController::class, 'update']);
         Route::patch('/{id}', [PageContentController::class, 'update']);
         Route::delete('/{id}', [PageContentController::class, 'destroy']);
+    });
+
+    Route::prefix('page-configs')->group(function () {
+        Route::get('/', [PageConfigController::class, 'index']);
+        Route::get('/{id}', [PageConfigController::class, 'show']);
+        Route::put('/{id}', [PageConfigController::class, 'update']);
+        Route::patch('/{id}', [PageConfigController::class, 'update']);
     });
 
     Route::prefix('page-sections')->group(function () {

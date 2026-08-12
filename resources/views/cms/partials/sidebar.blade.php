@@ -11,6 +11,7 @@
     <a class="nav-item {{ request()->routeIs('cms.page-contents.*') ? 'active' : '' }}" href="{{ route('cms.page-contents.index') }}">▤ Trang nội dung</a>
     <a class="nav-item {{ request()->routeIs('cms.page-sections.*') ? 'active' : '' }}" href="{{ route('cms.page-sections.index') }}">☷ Bố cục / Section</a>
     <a class="nav-item {{ request()->routeIs('cms.section-items.*') ? 'active' : '' }}" href="{{ route('cms.section-items.index') }}">≡ Nội dung Section</a>
+    <a class="nav-item {{ request()->routeIs('cms.page-configs.*') ? 'active' : '' }}" href="{{ route('cms.page-configs.index') }}">⚙ Cấu hình trang</a>
     <div class="nav-label">Hệ thống</div>
     <a class="nav-item" href="{{ url('/api/documentation') }}" target="_blank">⌗ Tài liệu API</a>
 </aside>

@@ -58,6 +58,19 @@ return [
                 ['name' => 'images', 'label' => 'Hình ảnh', 'type' => 'files', 'accept' => 'image/jpeg,image/png,image/webp'],
             ],
         ],
+        'page-configs' => [
+            'title' => 'Cấu hình trang', 'description' => 'Quản lý thông tin chung của công ty và website.', 'api' => 'page-configs',
+            'columns' => ['company_name' => 'Tên công ty', 'hotline' => 'Hotline', 'working_hour' => 'Giờ làm việc', 'addresses' => 'Địa chỉ'],
+            'fields' => [
+                ['name' => 'company_name', 'label' => 'Tên công ty', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên công ty'],
+                ['name' => 'hotline', 'label' => 'Hotline', 'type' => 'text', 'placeholder' => 'Nhập số hotline'],
+                ['name' => 'working_hour', 'label' => 'Giờ làm việc', 'type' => 'text', 'placeholder' => 'Nhập giờ làm việc'],
+                ['name' => 'favicon', 'label' => 'Favicon', 'type' => 'single_file', 'accept' => 'image/png,image/x-icon,image/jpeg,image/webp'],
+                ['name' => 'logo', 'label' => 'Logo', 'type' => 'single_file', 'accept' => 'image/png,image/jpeg,image/webp'],
+                ['name' => 'addresses', 'label' => 'Địa chỉ', 'type' => 'repeatable_values', 'placeholder' => 'Nhập địa chỉ', 'add_label' => 'Thêm địa chỉ', 'empty_label' => 'Chưa có địa chỉ nào.'],
+                ['name' => 'socials', 'label' => 'Mạng xã hội', 'type' => 'key_value', 'key_placeholder' => 'Tên nền tảng', 'value_placeholder' => 'Nhập URL'],
+            ],
+        ],
         'page-contents' => [
             'title' => 'Trang nội dung', 'description' => 'Thông tin chung của từng trang.', 'api' => 'page-contents',
             'columns' => ['title' => 'Tên trang', 'slug' => 'Slug'],

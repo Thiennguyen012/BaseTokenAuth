@@ -1,6 +1,6 @@
 @foreach($config['fields'] as $field)
 @php($type = $field['type'])
-<div class="field {{ in_array($type, ['textarea','json','files','lines','multi_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}">
+<div class="field {{ in_array($type, ['textarea','json','key_value','repeatable_values','files','single_file','lines','multi_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}">
     @if($type === 'checkbox')
         <label class="check"><input type="checkbox" name="{{ $field['name'] }}" value="1"> {{ $field['label'] }}</label>
     @else
@@ -26,11 +26,24 @@
             <div class="relation-picker" data-type="product_variant_groups" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] }}"><div class="relation-loading">Đang tải nhóm biến thể...</div></div>
         @elseif($type === 'variant_options')
             <div class="relation-picker" data-type="variant_options" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] }}"><div class="relation-loading">Đang tải giá trị biến thể...</div></div>
-        @elseif($type === 'files')
+        @elseif($type === 'key_value')
+            <div class="key-value-editor" data-type="key_value" data-name="{{ $field['name'] }}" data-key-placeholder="{{ $field['key_placeholder'] ?? 'Tên mục' }}" data-value-placeholder="{{ $field['value_placeholder'] ?? 'Nhập giá trị' }}">
+                <div class="key-value-toolbar"><small>Thêm từng nền tảng và đường dẫn tương ứng.</small><button type="button" class="btn compact" data-add-key-value>＋ Thêm mạng xã hội</button></div>
+                <div class="key-value-rows" data-key-value-rows></div>
+                <div class="key-value-empty" data-key-value-empty>Chưa có mạng xã hội nào.</div>
+            </div>
+        @elseif($type === 'repeatable_values')
+            <div class="repeatable-editor" data-type="repeatable_values" data-name="{{ $field['name'] }}" data-placeholder="{{ $field['placeholder'] ?? 'Nhập giá trị' }}">
+                <div class="key-value-toolbar"><small>Thêm từng địa chỉ vào danh sách.</small><button type="button" class="btn compact" data-add-repeatable>＋ {{ $field['add_label'] ?? 'Thêm mục' }}</button></div>
+                <div class="repeatable-rows" data-repeatable-rows></div>
+                <div class="key-value-empty" data-repeatable-empty>{{ $field['empty_label'] ?? 'Chưa có dữ liệu.' }}</div>
+            </div>
+        @elseif(in_array($type, ['files', 'single_file']))
             <x-cms.multiple-file-upload
                 :name="$field['name']"
                 :accept="$field['accept'] ?? 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar'"
                 :required="$field['required'] ?? false"
+                :multiple="$type === 'files'"
             />
         @else
             <input class="input" id="{{ $field['name'] }}" type="{{ $type }}" name="{{ $field['name'] }}" placeholder="{{ $field['placeholder'] ?? '' }}" {{ ($field['required'] ?? false) ? 'required' : '' }}>

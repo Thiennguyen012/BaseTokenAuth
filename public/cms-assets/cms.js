@@ -148,7 +148,7 @@ window.CMS = (() => {
                 preview.querySelectorAll('[data-new-file]').forEach(item => item.remove());
                 files.forEach((file, index) => { const item = renderUploadItem(file, 'new', () => { files.splice(index, 1); sync(); }); item.dataset.newFile = '1'; preview.appendChild(item); });
             };
-            const add = incoming => { files = [...files, ...incoming]; sync(); };
+            const add = incoming => { files = upload.dataset.singleUpload ? incoming.slice(0, 1) : [...files, ...incoming]; sync(); };
             input.addEventListener('change', () => add([...input.files]));
             ['dragenter', 'dragover'].forEach(name => zone.addEventListener(name, event => { event.preventDefault(); zone.classList.add('dragover'); }));
             ['dragleave', 'drop'].forEach(name => zone.addEventListener(name, event => { event.preventDefault(); zone.classList.remove('dragover'); }));
@@ -783,13 +783,82 @@ window.CMS = (() => {
         });
     }
 
+    function setupKeyValueEditors(form) {
+        form.querySelectorAll('[data-type="key_value"]').forEach(editor => {
+            const rows = editor.querySelector('[data-key-value-rows]');
+            const empty = editor.querySelector('[data-key-value-empty]');
+            const refreshEmpty = () => { empty.hidden = rows.children.length > 0; };
+            const addRow = (key = '', value = '') => {
+                const row = document.createElement('div');
+                row.className = 'key-value-row';
+                row.innerHTML = `<input class="input" data-key-value-key placeholder="${esc(editor.dataset.keyPlaceholder)}" value="${esc(key)}"><input class="input" type="url" data-key-value-value placeholder="${esc(editor.dataset.valuePlaceholder)}" value="${esc(value)}"><button type="button" class="btn icon-button danger-icon" data-remove-key-value title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button>`;
+                row.querySelector('[data-remove-key-value]').onclick = () => { row.remove(); refreshEmpty(); };
+                rows.appendChild(row);
+                refreshEmpty();
+                return row;
+            };
+            editor.querySelector('[data-add-key-value]').onclick = () => addRow().querySelector('[data-key-value-key]').focus();
+            editor._setValue = values => {
+                rows.innerHTML = '';
+                Object.entries(values || {}).forEach(([key, value]) => addRow(key, value));
+                refreshEmpty();
+            };
+            editor._appendTo = formData => {
+                const name = editor.dataset.name;
+                const seen = new Set();
+                [...rows.children].forEach(row => {
+                    const key = row.querySelector('[data-key-value-key]').value.trim();
+                    const value = row.querySelector('[data-key-value-value]').value.trim();
+                    if (!key && !value) return;
+                    if (!key || !value) throw new Error('Vui lòng nhập đủ tên nền tảng và URL.');
+                    if (seen.has(key)) throw new Error(`Tên nền tảng "${key}" đang bị trùng.`);
+                    seen.add(key);
+                    formData.append(`${name}[${key}]`, value);
+                });
+            };
+            refreshEmpty();
+        });
+    }
+
+    function setupRepeatableEditors(form) {
+        form.querySelectorAll('[data-type="repeatable_values"]').forEach(editor => {
+            const rows = editor.querySelector('[data-repeatable-rows]');
+            const empty = editor.querySelector('[data-repeatable-empty]');
+            const refreshEmpty = () => { empty.hidden = rows.children.length > 0; };
+            const addRow = (value = '') => {
+                const row = document.createElement('div');
+                row.className = 'repeatable-row';
+                row.innerHTML = `<input class="input" data-repeatable-value maxlength="255" placeholder="${esc(editor.dataset.placeholder)}" value="${esc(value)}"><button type="button" class="btn icon-button danger-icon" data-remove-repeatable title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button>`;
+                row.querySelector('[data-remove-repeatable]').onclick = () => { row.remove(); refreshEmpty(); };
+                rows.appendChild(row);
+                refreshEmpty();
+                return row;
+            };
+            editor.querySelector('[data-add-repeatable]').onclick = () => addRow().querySelector('[data-repeatable-value]').focus();
+            editor._setValue = values => {
+                rows.innerHTML = '';
+                (Array.isArray(values) ? values : []).forEach(value => addRow(value));
+                refreshEmpty();
+            };
+            editor._appendTo = formData => {
+                const name = editor.dataset.name;
+                [...rows.querySelectorAll('[data-repeatable-value]')].forEach(input => {
+                    const value = input.value.trim();
+                    if (value) formData.append(`${name}[]`, value);
+                });
+            };
+            refreshEmpty();
+        });
+    }
+
     async function fill(form, row) {
         form.querySelectorAll('[name]').forEach(input => {
             const name = input.name.replace(/\[\]$/, '');
             const value = row[name];
             if (input.type === 'file' || value == null) return;
             if (input.type === 'checkbox') input.checked = !!value;
-            else if (input.dataset.type === 'json') input.value = JSON.stringify(value);
+            else if (input.dataset.type === 'json') input.value = JSON.stringify(value, null, 2);
+            else if (input.dataset.type === 'lines' && Array.isArray(value)) input.value = value.join('\n');
             else input.value = value;
         });
         if (row.product_id) {
@@ -812,6 +881,8 @@ window.CMS = (() => {
         });
         if (groupPicker?._updateSelection) groupPicker._updateSelection();
         form.querySelectorAll('[data-multi-upload]').forEach(upload => upload._showExisting?.(row[upload.dataset.fieldName] || []));
+        form.querySelectorAll('[data-type="key_value"]').forEach(editor => editor._setValue?.(row[editor.dataset.name] || {}));
+        form.querySelectorAll('[data-type="repeatable_values"]').forEach(editor => editor._setValue?.(row[editor.dataset.name] || []));
         const optionPicker = form.querySelector('[data-type="variant_options"]');
         if (optionPicker) (row.options || []).forEach(option => {
             const checkbox = optionPicker.querySelector(`[data-option-id][value="${option.id}"]`);
@@ -820,10 +891,15 @@ window.CMS = (() => {
     }
 
     function appendJson(formData, name, value) {
-        if (!Array.isArray(value)) return;
-        value.forEach((item, index) => typeof item === 'object'
-            ? Object.entries(item).forEach(([key, data]) => formData.append(`${name}[${index}][${key}]`, data))
-            : formData.append(`${name}[]`, item));
+        if (Array.isArray(value)) {
+            value.forEach((item, index) => appendJson(formData, `${name}[${index}]`, item));
+            return;
+        }
+        if (value && typeof value === 'object') {
+            Object.entries(value).forEach(([key, item]) => appendJson(formData, `${name}[${key}]`, item));
+            return;
+        }
+        formData.append(name, value ?? '');
     }
 
     function serializeRelations(form, formData) {
@@ -860,6 +936,8 @@ window.CMS = (() => {
         const indexUrl = form.dataset.indexUrl;
         try {
             setupMultiUploads(form);
+            setupKeyValueEditors(form);
+            setupRepeatableEditors(form);
             await loadSources(form);
             if (id) { const result = await request(`/${endpoint}/${id}`); await fill(form, result.data || {}); }
         } catch (error) { toast(error.message, true); }
@@ -870,6 +948,8 @@ window.CMS = (() => {
                 form.querySelectorAll('.field > .check input[type="checkbox"]').forEach(input => formData.set(input.name, input.checked ? '1' : '0'));
                 form.querySelectorAll('[data-type="json"]').forEach(input => { formData.delete(input.name); if (input.value.trim()) appendJson(formData, input.name, JSON.parse(input.value)); });
                 form.querySelectorAll('[data-type="lines"]').forEach(input => { formData.delete(input.name); input.value.split('\n').map(v => v.trim()).filter(Boolean).forEach(v => formData.append(`${input.name}[]`, v)); });
+                form.querySelectorAll('[data-type="key_value"]').forEach(editor => editor._appendTo?.(formData));
+                form.querySelectorAll('[data-type="repeatable_values"]').forEach(editor => editor._appendTo?.(formData));
                 serializeRelations(form, formData);
                 if (id) formData.append('_method', 'PUT');
                 const result = await request(`/${endpoint}${id ? '/' + id : ''}`, {method: 'POST', body: formData});

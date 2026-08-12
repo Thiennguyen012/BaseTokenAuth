@@ -352,6 +352,122 @@
                 ]
             }
         },
+        "/api/page-configs": {
+            "get": {
+                "tags": [
+                    "Page Configs"
+                ],
+                "summary": "Lấy cấu hình chung của trang",
+                "operationId": "9f0525cba4534dc723b03a1a067f0962",
+                "responses": {
+                    "200": {
+                        "description": "Thành công",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PageConfigResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/page-configs/{id}": {
+            "get": {
+                "tags": [
+                    "Page Configs"
+                ],
+                "summary": "Lấy cấu hình chung của trang theo ID",
+                "operationId": "bb9d56d924c2ae3f50d42875f12ab446",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Page Configs"
+                ],
+                "summary": "Cập nhật cấu hình chung của trang",
+                "operationId": "398ca281f59e0d62fd688470c7a5c83d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePageConfigRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/page-contents": {
             "get": {
                 "tags": [
@@ -2131,6 +2247,41 @@
     },
     "components": {
         "schemas": {
+            "UpdatePageConfigRequest": {
+                "properties": {
+                    "company_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "addresses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "maxLength": 255
+                        }
+                    },
+                    "hotline": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "working_hour": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "socials": {
+                        "type": "object"
+                    },
+                    "favicon": {
+                        "type": "string",
+                        "format": "binary"
+                    },
+                    "logo": {
+                        "type": "string",
+                        "format": "binary"
+                    }
+                },
+                "type": "object"
+            },
             "StorePageContentRequest": {
                 "required": [
                     "slug",
@@ -2743,6 +2894,51 @@
                 },
                 "type": "object"
             },
+            "PageConfigResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "company_name": {
+                        "type": "string"
+                    },
+                    "addresses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "hotline": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "working_hour": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "socials": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "favicon_path": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "logo_path": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "PageContentResource": {
                 "properties": {
                     "id": {
@@ -3168,6 +3364,10 @@
         {
             "name": "Files",
             "description": "Files"
+        },
+        {
+            "name": "Page Configs",
+            "description": "Page Configs"
         },
         {
             "name": "Page Contents",

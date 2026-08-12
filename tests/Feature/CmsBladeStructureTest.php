@@ -65,6 +65,21 @@ class CmsBladeStructureTest extends TestCase
         $this->actingAs($user)->get('/cms/section-items/1/edit')->assertOk()->assertSee('Chỉnh sửa nội dung section', false);
     }
 
+    public function test_authenticated_user_can_render_singleton_page_config_form(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Config Admin',
+            'email' => 'config@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['cms_access_token' => 'test-token'])
+            ->get('/cms/page-configs')
+            ->assertOk()
+            ->assertSee('page-configs');
+    }
+
     public function test_authenticated_user_can_logout_from_cms(): void
     {
         $user = User::query()->create([

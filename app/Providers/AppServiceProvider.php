@@ -20,6 +20,8 @@ use App\Repositories\VariantOption\VariantOptionInterface;
 use App\Repositories\VariantOption\VariantOptionRepository;
 use App\Repositories\PageContent\PageContentInterface;
 use App\Repositories\PageContent\PageContentRepository;
+use App\Repositories\PageConfig\PageConfigInterface;
+use App\Repositories\PageConfig\PageConfigRepository;
 use App\Repositories\PageSection\PageSectionInterface;
 use App\Repositories\PageSection\PageSectionRepository;
 use App\Repositories\SectionItem\SectionItemInterface;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserInterface::class, UserRepository::class);
         $this->app->bind(RefreshTokenInterface::class, RefreshTokenRepository::class);
         $this->app->bind(PageContentInterface::class, PageContentRepository::class);
+        $this->app->bind(PageConfigInterface::class, PageConfigRepository::class);
         $this->app->bind(PageSectionInterface::class, PageSectionRepository::class);
         $this->app->bind(SectionItemInterface::class, SectionItemRepository::class);
     }
