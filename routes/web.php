@@ -13,7 +13,7 @@ use App\Http\Controllers\Cms\VariantGroupController;
 use App\Http\Controllers\Cms\VariantOptionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('welcome'));
+Route::redirect('/', '/cms');
 
 Route::prefix('cms')->name('cms.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
