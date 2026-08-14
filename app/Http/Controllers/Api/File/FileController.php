@@ -17,7 +17,7 @@ class FileController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/files/{id}", summary="Chi tiết file", tags={"Files"},
+     *     path="/admin/api/files/{id}", summary="Chi tiết file", tags={"Files"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Thành công"),
@@ -34,7 +34,7 @@ class FileController extends Controller
 
     /**
      * @OA\Patch(
-     *     path="/api/files/{id}", summary="Cập nhật metadata hoặc URL video", tags={"Files"},
+     *     path="/admin/api/files/{id}", summary="Cập nhật metadata hoặc URL video", tags={"Files"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(@OA\JsonContent(
@@ -60,7 +60,7 @@ class FileController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/files/{id}/replace", summary="Thay nội dung file nhưng giữ nguyên ID và quan hệ", tags={"Files"},
+     *     path="/admin/api/files/{id}/replace", summary="Thay nội dung file nhưng giữ nguyên ID và quan hệ", tags={"Files"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(
@@ -88,7 +88,7 @@ class FileController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/files/{id}", summary="Xóa file", tags={"Files"},
+     *     path="/admin/api/files/{id}", summary="Xóa file", tags={"Files"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Đã xóa"),

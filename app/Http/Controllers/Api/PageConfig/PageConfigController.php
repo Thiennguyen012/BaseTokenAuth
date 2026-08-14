@@ -16,7 +16,7 @@ class PageConfigController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-configs",
+     *     path="/admin/api/page-configs",
      *     summary="Lấy cấu hình chung của trang",
      *     tags={"Page Configs"},
      *     security={{"sanctum":{}}},
@@ -39,7 +39,7 @@ class PageConfigController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-configs/{id}",
+     *     path="/admin/api/page-configs/{id}",
      *     summary="Lấy cấu hình chung của trang theo ID",
      *     tags={"Page Configs"},
      *     security={{"sanctum":{}}},
@@ -62,7 +62,7 @@ class PageConfigController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/page-configs/{id}",
+     *     path="/admin/api/page-configs/{id}",
      *     summary="Cập nhật cấu hình chung của trang",
      *     tags={"Page Configs"},
      *     security={{"sanctum":{}}},

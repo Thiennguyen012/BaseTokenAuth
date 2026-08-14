@@ -1,7 +1,7 @@
 window.CMS = (() => {
     const tokenKey = 'nhua_cms_token';
     const toastKey = 'nhua_cms_toast';
-    const api = () => document.body.dataset.api || '/api';
+    const api = () => document.body.dataset.api || '/admin/api';
     const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
     let loggingOut = false;
 

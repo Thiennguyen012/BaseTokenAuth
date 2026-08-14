@@ -22,7 +22,7 @@ class PageContentController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-contents",
+     *     path="/admin/api/page-contents",
      *     summary="Danh sách nội dung trang",
      *     tags={"Page Contents"},
      *     security={{"sanctum":{}}},
@@ -55,7 +55,7 @@ class PageContentController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/page-contents",
+     *     path="/admin/api/page-contents",
      *     summary="Tạo nội dung trang",
      *     tags={"Page Contents"},
      *     security={{"sanctum":{}}},
@@ -85,7 +85,7 @@ class PageContentController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-contents/{id}",
+     *     path="/admin/api/page-contents/{id}",
      *     summary="Chi tiết nội dung trang (theo ID hoặc Slug)",
      *     tags={"Page Contents"},
      *     security={{"sanctum":{}}},
@@ -118,7 +118,7 @@ class PageContentController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/page-contents/{id}",
+     *     path="/admin/api/page-contents/{id}",
      *     summary="Cập nhật nội dung trang",
      *     tags={"Page Contents"},
      *     security={{"sanctum":{}}},
@@ -159,7 +159,7 @@ class PageContentController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/page-contents/{id}",
+     *     path="/admin/api/page-contents/{id}",
      *     summary="Xóa nội dung trang",
      *     tags={"Page Contents"},
      *     security={{"sanctum":{}}},

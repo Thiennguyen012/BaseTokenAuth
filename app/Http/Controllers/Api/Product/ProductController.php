@@ -27,7 +27,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/products",
+     *     path="/admin/api/products",
      *     summary="Danh sách sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
@@ -62,7 +62,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/products",
+     *     path="/admin/api/products",
      *     summary="Tạo sản phẩm kèm ảnh",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
@@ -95,7 +95,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/products/{id}",
+     *     path="/admin/api/products/{id}",
      *     summary="Chi tiết sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
@@ -128,7 +128,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/products/{id}",
+     *     path="/admin/api/products/{id}",
      *     summary="Cập nhật sản phẩm kèm ảnh",
      *     description="Gửi multipart/form-data bằng POST và đặt _method=PUT.",
      *     tags={"Products"},
@@ -173,7 +173,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/products/{id}",
+     *     path="/admin/api/products/{id}",
      *     summary="Xóa sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
@@ -207,7 +207,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/products/{id}/variant-groups/{configurationId}",
+     *     path="/admin/api/products/{id}/variant-groups/{configurationId}",
      *     summary="Gỡ nhóm biến thể khỏi sản phẩm",
      *     tags={"Products"}, security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
@@ -232,7 +232,7 @@ class ProductController extends Controller
 
     /**
      * @OA\Patch(
-     *     path="/api/products/{id}/variant-groups/{configurationId}",
+     *     path="/admin/api/products/{id}/variant-groups/{configurationId}",
      *     summary="Cập nhật cấu hình nhóm biến thể của sản phẩm",
      *     tags={"Products"}, security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),

@@ -12,13 +12,13 @@
         }
     ],
     "paths": {
-        "/api/auth/login": {
+        "/admin/api/auth/login": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Đăng nhập",
-                "operationId": "dd51a484b7fa0f97c7680fdbde14cf5f",
+                "operationId": "70f84193c1cd5066c95632726604ab28",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -58,13 +58,13 @@
                 }
             }
         },
-        "/api/auth/refresh": {
+        "/admin/api/auth/refresh": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Làm mới access token",
-                "operationId": "30c20c52f5f72828d8c531fd7c9ea3e7",
+                "operationId": "f66b0c90e9d580f71b49d7de9cad4e3b",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -93,13 +93,13 @@
                 }
             }
         },
-        "/api/auth/logout": {
+        "/admin/api/auth/logout": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Đăng xuất",
-                "operationId": "df9bdc6c7a6d9f20b983526b2ec0f698",
+                "operationId": "ab47055da82ac38e91cf8971f4555049",
                 "requestBody": {
                     "required": false,
                     "content": {
@@ -135,13 +135,13 @@
                 ]
             }
         },
-        "/api/auth/me": {
+        "/admin/api/auth/me": {
             "get": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Lấy thông tin người dùng hiện tại",
-                "operationId": "b5de204f5e452ef51327c691aa99e77c",
+                "operationId": "468ab2a8963648747a1c00b6779ea7c1",
                 "responses": {
                     "200": {
                         "description": "Lấy thông tin người dùng thành công",
@@ -176,13 +176,13 @@
                 ]
             }
         },
-        "/api/files/{id}": {
+        "/admin/api/files/{id}": {
             "get": {
                 "tags": [
                     "Files"
                 ],
                 "summary": "Chi tiết file",
-                "operationId": "2d3e796aedfaf60cec6e763af54e8196",
+                "operationId": "2ab0af4caa9306c46ea29128395da887",
                 "parameters": [
                     {
                         "name": "id",
@@ -212,7 +212,7 @@
                     "Files"
                 ],
                 "summary": "Xóa file",
-                "operationId": "9659872c89b210e036468b1d43bb399a",
+                "operationId": "9558c70861e7f97e82ed7778930d89db",
                 "parameters": [
                     {
                         "name": "id",
@@ -242,7 +242,7 @@
                     "Files"
                 ],
                 "summary": "Cập nhật metadata hoặc URL video",
-                "operationId": "19d712ad2e52008703e70eefcadee18d",
+                "operationId": "61fdd6b8317b9dff14897763f38a077a",
                 "parameters": [
                     {
                         "name": "id",
@@ -292,13 +292,13 @@
                 ]
             }
         },
-        "/api/files/{id}/replace": {
+        "/admin/api/files/{id}/replace": {
             "post": {
                 "tags": [
                     "Files"
                 ],
                 "summary": "Thay nội dung file nhưng giữ nguyên ID và quan hệ",
-                "operationId": "38c28e0cf03701caccfaf4ec0417fd8b",
+                "operationId": "509ab1eec68cc32d26663a9635b4c26b",
                 "parameters": [
                     {
                         "name": "id",
@@ -352,13 +352,13 @@
                 ]
             }
         },
-        "/api/page-configs": {
+        "/admin/api/page-configs": {
             "get": {
                 "tags": [
                     "Page Configs"
                 ],
                 "summary": "Lấy cấu hình chung của trang",
-                "operationId": "9f0525cba4534dc723b03a1a067f0962",
+                "operationId": "5989b87cc5c94200b2975d11cb03b9a6",
                 "responses": {
                     "200": {
                         "description": "Thành công",
@@ -393,13 +393,13 @@
                 ]
             }
         },
-        "/api/page-configs/{id}": {
+        "/admin/api/page-configs/{id}": {
             "get": {
                 "tags": [
                     "Page Configs"
                 ],
                 "summary": "Lấy cấu hình chung của trang theo ID",
-                "operationId": "bb9d56d924c2ae3f50d42875f12ab446",
+                "operationId": "8b033a95db9bc9a99190eba32aeed843",
                 "parameters": [
                     {
                         "name": "id",
@@ -429,7 +429,7 @@
                     "Page Configs"
                 ],
                 "summary": "Cập nhật cấu hình chung của trang",
-                "operationId": "398ca281f59e0d62fd688470c7a5c83d",
+                "operationId": "f487de267a2c4ccda0a8810add0c7b96",
                 "parameters": [
                     {
                         "name": "id",
@@ -468,13 +468,13 @@
                 ]
             }
         },
-        "/api/page-contents": {
+        "/admin/api/page-contents": {
             "get": {
                 "tags": [
                     "Page Contents"
                 ],
                 "summary": "Danh sách nội dung trang",
-                "operationId": "9a859e5bf453efd10585dccc45db71fc",
+                "operationId": "34f190dc62e310b2fc28d3f5f0ab6957",
                 "parameters": [
                     {
                         "name": "search",
@@ -510,7 +510,7 @@
                     "Page Contents"
                 ],
                 "summary": "Tạo nội dung trang",
-                "operationId": "8cda6f536dd2badbb0dca401af938fde",
+                "operationId": "e5611cd8edeb313ad76010c1f5937959",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -555,13 +555,13 @@
                 ]
             }
         },
-        "/api/page-contents/{id}": {
+        "/admin/api/page-contents/{id}": {
             "get": {
                 "tags": [
                     "Page Contents"
                 ],
                 "summary": "Chi tiết nội dung trang (theo ID hoặc Slug)",
-                "operationId": "ace6906b95e7f4c31700b887e73eb8e8",
+                "operationId": "e2cd16434ef5650220e5c08e0d9ff6a9",
                 "parameters": [
                     {
                         "name": "id",
@@ -610,7 +610,7 @@
                     "Page Contents"
                 ],
                 "summary": "Cập nhật nội dung trang",
-                "operationId": "168d8c1634f8881f91c8c031dbb87221",
+                "operationId": "044661f37bd429bd1e44e6ca9941b517",
                 "parameters": [
                     {
                         "name": "id",
@@ -671,7 +671,7 @@
                     "Page Contents"
                 ],
                 "summary": "Xóa nội dung trang",
-                "operationId": "a804b87941d707937e13f75ad898908a",
+                "operationId": "5b7b2ef8f6ef8b5c51d0b58d3f42be73",
                 "parameters": [
                     {
                         "name": "id",
@@ -697,13 +697,13 @@
                 ]
             }
         },
-        "/api/page-sections": {
+        "/admin/api/page-sections": {
             "get": {
                 "tags": [
                     "Page Sections"
                 ],
                 "summary": "Danh sách mục trang",
-                "operationId": "d0fa5bee91e6355f02ddf6ffcfe20fcb",
+                "operationId": "d9a884cf0facebb6055c3e944c9a773b",
                 "parameters": [
                     {
                         "name": "search",
@@ -746,7 +746,7 @@
                     "Page Sections"
                 ],
                 "summary": "Tạo mục trang",
-                "operationId": "9b6802d4f2def346ffa801972be96e24",
+                "operationId": "1e14d78f0ef79707fecbf16ea9701800",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -791,13 +791,13 @@
                 ]
             }
         },
-        "/api/page-sections/{id}": {
+        "/admin/api/page-sections/{id}": {
             "get": {
                 "tags": [
                     "Page Sections"
                 ],
                 "summary": "Chi tiết mục trang",
-                "operationId": "72ae71b8dc69c7a41794fa7f7ae95c80",
+                "operationId": "f83eaf5c1e7385efc6d2082c988d84d1",
                 "parameters": [
                     {
                         "name": "id",
@@ -846,7 +846,7 @@
                     "Page Sections"
                 ],
                 "summary": "Cập nhật mục trang",
-                "operationId": "131dcae5a68f35e5cc933298ef2af633",
+                "operationId": "6bd24a8bea034d851674ec85ee63a2fe",
                 "parameters": [
                     {
                         "name": "id",
@@ -907,7 +907,7 @@
                     "Page Sections"
                 ],
                 "summary": "Xóa mục trang",
-                "operationId": "3f6da43050aa7a2726936c6e28054088",
+                "operationId": "5c32db47c04bd85641436a3d685c4645",
                 "parameters": [
                     {
                         "name": "id",
@@ -933,13 +933,13 @@
                 ]
             }
         },
-        "/api/product-variants": {
+        "/admin/api/product-variants": {
             "get": {
                 "tags": [
                     "Product Variants"
                 ],
                 "summary": "Danh sách biến thể sản phẩm",
-                "operationId": "3863e44e732ae5f66e7862065318ef37",
+                "operationId": "8f74e0173c6a065d8059b458e59a2e03",
                 "parameters": [
                     {
                         "name": "search",
@@ -982,7 +982,7 @@
                     "Product Variants"
                 ],
                 "summary": "Tạo biến thể sản phẩm kèm ảnh",
-                "operationId": "faa10e0879e908667a12684e81e5cf5a",
+                "operationId": "ea3e82fe27bd6c6287a3ae45c990093b",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1027,13 +1027,13 @@
                 ]
             }
         },
-        "/api/product-variants/{id}": {
+        "/admin/api/product-variants/{id}": {
             "get": {
                 "tags": [
                     "Product Variants"
                 ],
                 "summary": "Chi tiết biến thể sản phẩm",
-                "operationId": "d6cae9667e44c10c3afefa1cbbc740c8",
+                "operationId": "508a4ff97267347922dd8a5046b46da1",
                 "parameters": [
                     {
                         "name": "id",
@@ -1083,7 +1083,7 @@
                 ],
                 "summary": "Cập nhật biến thể kèm ảnh",
                 "description": "Gửi multipart/form-data bằng POST và đặt _method=PUT.",
-                "operationId": "27d83bfc69ded96cf4faf5d524bf7593",
+                "operationId": "46d18c11ee3a76390fe2cee10c042ea0",
                 "parameters": [
                     {
                         "name": "id",
@@ -1144,7 +1144,7 @@
                     "Product Variants"
                 ],
                 "summary": "Xóa biến thể sản phẩm",
-                "operationId": "c0eb6752fecd75422c926763266afa4b",
+                "operationId": "1b6042155b74bac9e9fa0a9533d3ad0f",
                 "parameters": [
                     {
                         "name": "id",
@@ -1170,13 +1170,13 @@
                 ]
             }
         },
-        "/api/products": {
+        "/admin/api/products": {
             "get": {
                 "tags": [
                     "Products"
                 ],
                 "summary": "Danh sách sản phẩm",
-                "operationId": "16151fd150adb5c53ccb365b18872b88",
+                "operationId": "266d4b21a187f4ec40a33f5dbc802e08",
                 "parameters": [
                     {
                         "name": "search",
@@ -1223,7 +1223,7 @@
                     "Products"
                 ],
                 "summary": "Tạo sản phẩm kèm ảnh",
-                "operationId": "39e039020db35ef73fb90039e9a2e0fb",
+                "operationId": "dc9e1ef913c97b56478b59eaca1c770e",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1268,13 +1268,13 @@
                 ]
             }
         },
-        "/api/products/{id}": {
+        "/admin/api/products/{id}": {
             "get": {
                 "tags": [
                     "Products"
                 ],
                 "summary": "Chi tiết sản phẩm",
-                "operationId": "e8be9e42b1e86fa64b22150625f74dbd",
+                "operationId": "82ed5232e3d7ecbf2850714d9d53cba3",
                 "parameters": [
                     {
                         "name": "id",
@@ -1324,7 +1324,7 @@
                 ],
                 "summary": "Cập nhật sản phẩm kèm ảnh",
                 "description": "Gửi multipart/form-data bằng POST và đặt _method=PUT.",
-                "operationId": "5538a3965ce7bdd5a876cc61568299cd",
+                "operationId": "1e44e76f9a2e8d1dedfbc8b5c1612d88",
                 "parameters": [
                     {
                         "name": "id",
@@ -1386,7 +1386,7 @@
                     "Products"
                 ],
                 "summary": "Xóa sản phẩm",
-                "operationId": "4a840887f9748a17d79fe0af9ab29131",
+                "operationId": "6433c957c4d2184f829d4f9dc52951fb",
                 "parameters": [
                     {
                         "name": "id",
@@ -1412,13 +1412,13 @@
                 ]
             }
         },
-        "/api/products/{id}/variant-groups/{configurationId}": {
+        "/admin/api/products/{id}/variant-groups/{configurationId}": {
             "delete": {
                 "tags": [
                     "Products"
                 ],
                 "summary": "Gỡ nhóm biến thể khỏi sản phẩm",
-                "operationId": "e855f343f32ee383b0941f5724efbfde",
+                "operationId": "e2d0f32b8a309b74f0e4a1914e01001e",
                 "parameters": [
                     {
                         "name": "id",
@@ -1459,7 +1459,7 @@
                     "Products"
                 ],
                 "summary": "Cập nhật cấu hình nhóm biến thể của sản phẩm",
-                "operationId": "b7e25a8ba62b36430ada8ee4a63c57f6",
+                "operationId": "b4dc5d3c12ed38aa6f95f80f8b54350b",
                 "parameters": [
                     {
                         "name": "id",
@@ -1511,13 +1511,150 @@
                 ]
             }
         },
-        "/api/section-items": {
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Danh sách sản phẩm công khai đang hoạt động",
+                "operationId": "bb6f456f66813428aa048abb21469ad7",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category_ids[]",
+                        "in": "query",
+                        "description": "Lọc AND theo danh mục",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                }
+            }
+        },
+        "/api/products/{id}": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Chi tiết sản phẩm công khai",
+                "operationId": "1e8b8ce14eddad466bd7b95e167f66d9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                }
+            }
+        },
+        "/api/categories": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Danh sách danh mục công khai",
+                "operationId": "cc8111c989a1c1d16f389e1fb0896624",
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                }
+            }
+        },
+        "/api/page-contents": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Danh sách nội dung trang công khai",
+                "operationId": "dcc1e38948f68a4c64aa8a3b969b8250",
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                }
+            }
+        },
+        "/api/page-contents/{id}": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Chi tiết nội dung trang theo ID hoặc slug",
+                "operationId": "3732066084c13493bc12aebe970bc849",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                }
+            }
+        },
+        "/api/page-configs": {
+            "get": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Cấu hình chung của landing page",
+                "operationId": "257f61ca897b7c7d72388640042b8cc1",
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    }
+                }
+            }
+        },
+        "/admin/api/section-items": {
             "get": {
                 "tags": [
                     "Section Items"
                 ],
                 "summary": "Danh sách phần tử mục trang",
-                "operationId": "c58aed0095d61ffb20f0e44bbe8ef692",
+                "operationId": "57699fcedd9316253fbf2f1cb7709972",
                 "parameters": [
                     {
                         "name": "search",
@@ -1560,7 +1697,7 @@
                     "Section Items"
                 ],
                 "summary": "Tạo phần tử mục trang",
-                "operationId": "702b1b517c1d4ed7feaf270497f92b40",
+                "operationId": "72d61cda97e2a14c8bd7c73aadacf32a",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1605,13 +1742,13 @@
                 ]
             }
         },
-        "/api/section-items/{id}": {
+        "/admin/api/section-items/{id}": {
             "get": {
                 "tags": [
                     "Section Items"
                 ],
                 "summary": "Chi tiết phần tử mục trang",
-                "operationId": "7e3ad61debd86fc62ea8d57bcc8e4f3b",
+                "operationId": "ea0f1a155f4019d17709e86b84c759d3",
                 "parameters": [
                     {
                         "name": "id",
@@ -1660,7 +1797,7 @@
                     "Section Items"
                 ],
                 "summary": "Cập nhật phần tử mục trang",
-                "operationId": "3412e4febdff1d9aa3ce2e1d91c0d5c8",
+                "operationId": "5ebbd8b1a361fea82480a638a4fe1edf",
                 "parameters": [
                     {
                         "name": "id",
@@ -1721,7 +1858,7 @@
                     "Section Items"
                 ],
                 "summary": "Xóa phần tử mục trang",
-                "operationId": "aae13abfe3b815eb20c84133ad59b0b9",
+                "operationId": "957c169db372f865a42ff813f17d8cbd",
                 "parameters": [
                     {
                         "name": "id",
@@ -1747,13 +1884,13 @@
                 ]
             }
         },
-        "/api/variant-groups": {
+        "/admin/api/variant-groups": {
             "get": {
                 "tags": [
                     "Variant Groups"
                 ],
                 "summary": "Danh sách nhóm biến thể",
-                "operationId": "5e805b0c79871e46ccc69b6ceb9c1100",
+                "operationId": "6ceadd0a7403505a4c55e498a80eef99",
                 "parameters": [
                     {
                         "name": "search",
@@ -1789,7 +1926,7 @@
                     "Variant Groups"
                 ],
                 "summary": "Tạo nhóm biến thể",
-                "operationId": "d803a89e403d38064eda666c424f0655",
+                "operationId": "a42f22988a3ab623d539c3ea9f0e6fb6",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1834,13 +1971,13 @@
                 ]
             }
         },
-        "/api/variant-groups/{id}": {
+        "/admin/api/variant-groups/{id}": {
             "get": {
                 "tags": [
                     "Variant Groups"
                 ],
                 "summary": "Chi tiết nhóm biến thể",
-                "operationId": "1f8a1b006400fe613dfb03cbb93b816b",
+                "operationId": "fff8cdc1430aad76827dc26ae184ce84",
                 "parameters": [
                     {
                         "name": "id",
@@ -1889,7 +2026,7 @@
                     "Variant Groups"
                 ],
                 "summary": "Cập nhật nhóm biến thể",
-                "operationId": "a3410c05b5a27c14bcf8c1bdff38dfe4",
+                "operationId": "4f1e661d8e00158fd1321542d8d97c5b",
                 "parameters": [
                     {
                         "name": "id",
@@ -1950,7 +2087,7 @@
                     "Variant Groups"
                 ],
                 "summary": "Xóa nhóm biến thể",
-                "operationId": "2e7fe85c1a2a057203b1c14532d09449",
+                "operationId": "b62e226729a55748dda581c4eac58b02",
                 "parameters": [
                     {
                         "name": "id",
@@ -1976,13 +2113,13 @@
                 ]
             }
         },
-        "/api/variant-groups/{id}/usage": {
+        "/admin/api/variant-groups/{id}/usage": {
             "get": {
                 "tags": [
                     "Variant Groups"
                 ],
                 "summary": "Số sản phẩm đang sử dụng nhóm biến thể",
-                "operationId": "1383b43ee113a9c9f73fb0a2c0af8ec7",
+                "operationId": "ecbed0a59d0b36bc7dfb38e38caad81c",
                 "parameters": [
                     {
                         "name": "id",
@@ -2008,13 +2145,13 @@
                 ]
             }
         },
-        "/api/variant-options": {
+        "/admin/api/variant-options": {
             "get": {
                 "tags": [
                     "Variant Options"
                 ],
                 "summary": "Danh sách giá trị biến thể",
-                "operationId": "7640f9b76f2fc5fdbb1204651aa2f681",
+                "operationId": "876b12f1641b7b93486c6744e68367fb",
                 "parameters": [
                     {
                         "name": "search",
@@ -2057,7 +2194,7 @@
                     "Variant Options"
                 ],
                 "summary": "Tạo giá trị biến thể",
-                "operationId": "6555c3321249ae02fec94cbc99f200a9",
+                "operationId": "80a302fdc75e07d5707c2be8edd2caf7",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -2102,13 +2239,13 @@
                 ]
             }
         },
-        "/api/variant-options/{id}": {
+        "/admin/api/variant-options/{id}": {
             "get": {
                 "tags": [
                     "Variant Options"
                 ],
                 "summary": "Chi tiết giá trị biến thể",
-                "operationId": "5d7cac23e897da3d280f51470abdca00",
+                "operationId": "de9517d9dca6e4bce88fbc30027b3631",
                 "parameters": [
                     {
                         "name": "id",
@@ -2157,7 +2294,7 @@
                     "Variant Options"
                 ],
                 "summary": "Cập nhật giá trị biến thể",
-                "operationId": "81e3be6229077cba87d6c39a0aeae13e",
+                "operationId": "e1598f778a71eca40f558f9482747db3",
                 "parameters": [
                     {
                         "name": "id",
@@ -2218,7 +2355,7 @@
                     "Variant Options"
                 ],
                 "summary": "Xóa giá trị biến thể",
-                "operationId": "beded209efba32474ce376c9133a8458",
+                "operationId": "4fbf02470f5a0e7189ed5eed2410889b",
                 "parameters": [
                     {
                         "name": "id",
@@ -3376,6 +3513,10 @@
         {
             "name": "Page Sections",
             "description": "Page Sections"
+        },
+        {
+            "name": "Public",
+            "description": "Public"
         },
         {
             "name": "Section Items",

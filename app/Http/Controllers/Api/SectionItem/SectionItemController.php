@@ -22,7 +22,7 @@ class SectionItemController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/section-items",
+     *     path="/admin/api/section-items",
      *     summary="Danh sách phần tử mục trang",
      *     tags={"Section Items"},
      *     security={{"sanctum":{}}},
@@ -57,7 +57,7 @@ class SectionItemController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/section-items",
+     *     path="/admin/api/section-items",
      *     summary="Tạo phần tử mục trang",
      *     tags={"Section Items"},
      *     security={{"sanctum":{}}},
@@ -87,7 +87,7 @@ class SectionItemController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/section-items/{id}",
+     *     path="/admin/api/section-items/{id}",
      *     summary="Chi tiết phần tử mục trang",
      *     tags={"Section Items"},
      *     security={{"sanctum":{}}},
@@ -120,7 +120,7 @@ class SectionItemController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/section-items/{id}",
+     *     path="/admin/api/section-items/{id}",
      *     summary="Cập nhật phần tử mục trang",
      *     tags={"Section Items"},
      *     security={{"sanctum":{}}},
@@ -161,7 +161,7 @@ class SectionItemController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/section-items/{id}",
+     *     path="/admin/api/section-items/{id}",
      *     summary="Xóa phần tử mục trang",
      *     tags={"Section Items"},
      *     security={{"sanctum":{}}},

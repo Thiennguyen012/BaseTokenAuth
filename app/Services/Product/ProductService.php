@@ -104,6 +104,31 @@ class ProductService
         });
     }
 
+    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [])
+    {
+        $where = ['is_active' => true];
+        $orderBy = ['created_at' => 'desc'];
+        if ($search) {
+            $where['orWhere'] = [
+                'product_name' => ['product_name', 'like', '%' . $search . '%'],
+                'sku' => ['sku', 'like', '%' . $search . '%'],
+                'description' => ['description', 'like', '%' . $search . '%'],
+            ];
+        }
+        foreach ($categoryIds as $categoryId) {
+            $where['whereHas'][] = ['categories', ['categories.id' => (int) $categoryId]];
+        }
+        return $this->productRepository->paginate($where, $orderBy, ['*'], ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit);
+    }
+
+    public function findPublic($id)
+    {
+        return $this->productRepository->first(
+            ['id' => $id, 'is_active' => true], [], ['*'],
+            ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group']
+        );
+    }
+
     public function removeVariantGroup($product, int $configurationId): void
     {
         DB::transaction(function () use ($product, $configurationId) {

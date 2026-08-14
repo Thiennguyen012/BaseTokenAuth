@@ -22,7 +22,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/variant-groups",
+     *     path="/admin/api/variant-groups",
      *     summary="Danh sách nhóm biến thể",
      *     tags={"Variant Groups"},
      *     security={{"sanctum":{}}},
@@ -55,7 +55,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/variant-groups",
+     *     path="/admin/api/variant-groups",
      *     summary="Tạo nhóm biến thể",
      *     tags={"Variant Groups"},
      *     security={{"sanctum":{}}},
@@ -85,7 +85,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/variant-groups/{id}",
+     *     path="/admin/api/variant-groups/{id}",
      *     summary="Chi tiết nhóm biến thể",
      *     tags={"Variant Groups"},
      *     security={{"sanctum":{}}},
@@ -118,7 +118,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/variant-groups/{id}/usage",
+     *     path="/admin/api/variant-groups/{id}/usage",
      *     summary="Số sản phẩm đang sử dụng nhóm biến thể",
      *     tags={"Variant Groups"}, security={{"sanctum":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
@@ -146,7 +146,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/variant-groups/{id}",
+     *     path="/admin/api/variant-groups/{id}",
      *     summary="Cập nhật nhóm biến thể",
      *     tags={"Variant Groups"},
      *     security={{"sanctum":{}}},
@@ -187,7 +187,7 @@ class VariantGroupController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/variant-groups/{id}",
+     *     path="/admin/api/variant-groups/{id}",
      *     summary="Xóa nhóm biến thể",
      *     tags={"Variant Groups"},
      *     security={{"sanctum":{}}},

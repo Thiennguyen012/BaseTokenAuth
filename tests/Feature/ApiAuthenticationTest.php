@@ -11,7 +11,7 @@ class ApiAuthenticationTest extends TestCase
 
     public function test_protected_api_returns_json_unauthorized_without_token(): void
     {
-        $response = $this->get('/api/variant-options');
+        $response = $this->get('/admin/api/variant-options');
 
         $response
             ->assertUnauthorized()
@@ -26,7 +26,7 @@ class ApiAuthenticationTest extends TestCase
     {
         $response = $this
             ->withToken('invalid-or-expired-token')
-            ->get('/api/variant-options');
+            ->get('/admin/api/variant-options');
 
         $response
             ->assertUnauthorized()

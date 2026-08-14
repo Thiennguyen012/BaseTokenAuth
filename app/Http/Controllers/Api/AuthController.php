@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/auth/login",
+     *     path="/admin/api/auth/login",
      *     summary="Đăng nhập",
      *     tags={"Auth"},
      *     @OA\RequestBody(required=true, @OA\JsonContent(
@@ -77,7 +77,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/auth/refresh",
+     *     path="/admin/api/auth/refresh",
      *     summary="Làm mới access token",
      *     tags={"Auth"},
      *     @OA\RequestBody(required=true, @OA\JsonContent(
@@ -112,7 +112,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/auth/logout",
+     *     path="/admin/api/auth/logout",
      *     summary="Đăng xuất",
      *     tags={"Auth"},
      *     security={{"sanctum":{}}},
@@ -172,7 +172,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/auth/me",
+     *     path="/admin/api/auth/me",
      *     summary="Lấy thông tin người dùng hiện tại",
      *     tags={"Auth"},
      *     security={{"sanctum":{}}},

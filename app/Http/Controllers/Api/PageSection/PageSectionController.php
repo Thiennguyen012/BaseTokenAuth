@@ -22,7 +22,7 @@ class PageSectionController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-sections",
+     *     path="/admin/api/page-sections",
      *     summary="Danh sách mục trang",
      *     tags={"Page Sections"},
      *     security={{"sanctum":{}}},
@@ -57,7 +57,7 @@ class PageSectionController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/page-sections",
+     *     path="/admin/api/page-sections",
      *     summary="Tạo mục trang",
      *     tags={"Page Sections"},
      *     security={{"sanctum":{}}},
@@ -87,7 +87,7 @@ class PageSectionController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/page-sections/{id}",
+     *     path="/admin/api/page-sections/{id}",
      *     summary="Chi tiết mục trang",
      *     tags={"Page Sections"},
      *     security={{"sanctum":{}}},
@@ -120,7 +120,7 @@ class PageSectionController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/page-sections/{id}",
+     *     path="/admin/api/page-sections/{id}",
      *     summary="Cập nhật mục trang",
      *     tags={"Page Sections"},
      *     security={{"sanctum":{}}},
@@ -161,7 +161,7 @@ class PageSectionController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/page-sections/{id}",
+     *     path="/admin/api/page-sections/{id}",
      *     summary="Xóa mục trang",
      *     tags={"Page Sections"},
      *     security={{"sanctum":{}}},

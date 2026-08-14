@@ -22,7 +22,7 @@ class VariantOptionController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/variant-options",
+     *     path="/admin/api/variant-options",
      *     summary="Danh sách giá trị biến thể",
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},
@@ -59,7 +59,7 @@ class VariantOptionController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/variant-options",
+     *     path="/admin/api/variant-options",
      *     summary="Tạo giá trị biến thể",
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},
@@ -89,7 +89,7 @@ class VariantOptionController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/variant-options/{id}",
+     *     path="/admin/api/variant-options/{id}",
      *     summary="Chi tiết giá trị biến thể",
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},
@@ -122,7 +122,7 @@ class VariantOptionController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/variant-options/{id}",
+     *     path="/admin/api/variant-options/{id}",
      *     summary="Cập nhật giá trị biến thể",
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},
@@ -163,7 +163,7 @@ class VariantOptionController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/variant-options/{id}",
+     *     path="/admin/api/variant-options/{id}",
      *     summary="Xóa giá trị biến thể",
      *     tags={"Variant Options"},
      *     security={{"sanctum":{}}},

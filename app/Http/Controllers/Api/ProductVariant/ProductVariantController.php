@@ -23,7 +23,7 @@ class ProductVariantController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/product-variants",
+     *     path="/admin/api/product-variants",
      *     summary="Danh sách biến thể sản phẩm",
      *     tags={"Product Variants"},
      *     security={{"sanctum":{}}},
@@ -57,7 +57,7 @@ class ProductVariantController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/product-variants",
+     *     path="/admin/api/product-variants",
      *     summary="Tạo biến thể sản phẩm kèm ảnh",
      *     tags={"Product Variants"},
      *     security={{"sanctum":{}}},
@@ -92,7 +92,7 @@ class ProductVariantController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/product-variants/{id}",
+     *     path="/admin/api/product-variants/{id}",
      *     summary="Chi tiết biến thể sản phẩm",
      *     tags={"Product Variants"},
      *     security={{"sanctum":{}}},
@@ -125,7 +125,7 @@ class ProductVariantController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/product-variants/{id}",
+     *     path="/admin/api/product-variants/{id}",
      *     summary="Cập nhật biến thể kèm ảnh",
      *     description="Gửi multipart/form-data bằng POST và đặt _method=PUT.",
      *     tags={"Product Variants"},
@@ -176,7 +176,7 @@ class ProductVariantController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/product-variants/{id}",
+     *     path="/admin/api/product-variants/{id}",
      *     summary="Xóa biến thể sản phẩm",
      *     tags={"Product Variants"},
      *     security={{"sanctum":{}}},

@@ -13,6 +13,18 @@ use App\Http\Controllers\Api\PageConfig\PageConfigController;
 use App\Http\Controllers\Api\PageSection\PageSectionController;
 use App\Http\Controllers\Api\SectionItem\SectionItemController;
 use App\Http\Controllers\Api\File\FileController;
+use App\Http\Controllers\Api\PublicSite\LandingController;
+
+Route::prefix('api')->group(function () {
+    Route::get('/products', [LandingController::class, 'products']);
+    Route::get('/products/{id}', [LandingController::class, 'product']);
+    Route::get('/categories', [LandingController::class, 'categories']);
+    Route::get('/page-contents', [LandingController::class, 'pages']);
+    Route::get('/page-contents/{id}', [LandingController::class, 'page']);
+    Route::get('/page-configs', [LandingController::class, 'config']);
+});
+
+Route::prefix('admin/api')->group(function () {
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
@@ -118,4 +130,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/replace', [FileController::class, 'replace']);
         Route::delete('/{id}', [FileController::class, 'destroy']);
     });
+});
 });
