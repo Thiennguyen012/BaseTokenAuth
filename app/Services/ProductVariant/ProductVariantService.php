@@ -4,10 +4,12 @@ namespace App\Services\ProductVariant;
 
 use App\Models\Products\Product;
 use App\Models\Variants\VariantOption;
+use App\Models\ProductVariants\ProductVariant;
 use App\Repositories\ProductVariant\ProductVariantInterface;
 use App\Services\File\FileService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class ProductVariantService
 {
@@ -16,23 +18,29 @@ class ProductVariantService
         protected FileService $fileService
     ) {}
 
-    public function paginate(int $limit = 10, string $search = '', ?int $productId = null)
+    public function paginate(int $limit = 10, string $search = '', ?int $productId = null, array $optionIds = [])
     {
         $where = [];
 
         if ($search !== '') {
-            $where['sku'] = ['sku', 'like', $search];
+            $where['sku'] = ['sku', 'like', '%' . $search . '%'];
         }
 
         if ($productId !== null) {
             $where['product_id'] = $productId;
         }
 
+        foreach (array_unique(array_map('intval', $optionIds)) as $optionId) {
+            if ($optionId > 0) {
+                $where['whereHas'][] = ['options', ['variant_options.id' => $optionId]];
+            }
+        }
+
         return $this->productVariantRepository->paginate(
             $where,
             ['id' => 'desc'],
             ['*'],
-            ['files', 'options.productVariantGroup.group'],
+            ['product', 'files', 'options.productVariantGroup.group'],
             $limit
         );
     }
@@ -43,7 +51,7 @@ class ProductVariantService
             ['id' => $id],
             [],
             ['*'],
-            ['files', 'options.productVariantGroup.group']
+            ['product', 'files', 'options.productVariantGroup.group']
         );
     }
 
@@ -67,7 +75,90 @@ class ProductVariantService
             $variant->options()->attach($optionIds->all());
             $this->uploadImages($variant, $images);
 
-            return $variant->load(['files', 'options.productVariantGroup.group']);
+            return $variant->load(['product', 'files', 'options.productVariantGroup.group']);
+        });
+    }
+
+    public function createAllCombinations(array $data): array
+    {
+        return DB::transaction(function () use ($data) {
+            $product = Product::query()
+                ->with(['variantGroupConfigurations.options'])
+                ->lockForUpdate()
+                ->findOrFail($data['product_id']);
+
+            $groups = $product->variantGroupConfigurations
+                ->map(function ($configuration) {
+                    $options = $configuration->options
+                        ->where('is_active', true)
+                        ->sortBy([['sort_order', 'asc'], ['id', 'asc']])
+                        ->values();
+
+                    if ($configuration->is_required && $options->isEmpty()) {
+                        throw ValidationException::withMessages([
+                            'generate_all_combinations' => ["Nhóm {$configuration->group?->group_name} chưa có giá trị hoạt động."],
+                        ]);
+                    }
+
+                    return $options;
+                })
+                ->filter(fn ($options) => $options->isNotEmpty())
+                ->values();
+
+            if ($groups->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'generate_all_combinations' => ['Sản phẩm chưa có giá trị biến thể để tạo tổ hợp.'],
+                ]);
+            }
+
+            $combinations = [[]];
+            foreach ($groups as $options) {
+                $combinations = collect($combinations)
+                    ->flatMap(fn ($combination) => $options->map(fn ($option) => [...$combination, $option]))
+                    ->all();
+                if (count($combinations) > 500) {
+                    throw ValidationException::withMessages([
+                        'generate_all_combinations' => ['Số tổ hợp vượt quá giới hạn 500 biến thể.'],
+                    ]);
+                }
+            }
+
+            unset($data['option_ids'], $data['images'], $data['sku'], $data['generate_all_combinations']);
+            $created = collect();
+            $skipped = 0;
+            $baseSku = $this->skuPart($product->sku ?: 'SP-' . $product->id);
+
+            foreach ($combinations as $combination) {
+                $optionIds = collect($combination)->pluck('id')->map(fn ($id) => (int) $id)->sort()->values();
+                $combinationKey = hash('sha256', $optionIds->implode(':'));
+                if ($product->variants()->where('combination_key', $combinationKey)->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                $sku = collect($combination)
+                    ->pluck('option_code')
+                    ->prepend($baseSku)
+                    ->map(fn ($part) => $this->skuPart($part))
+                    ->filter()
+                    ->implode('-');
+                $sku = Str::limit($sku, 100, '');
+
+                if (ProductVariant::query()->where('sku', $sku)->exists()) {
+                    throw ValidationException::withMessages(['sku' => ["SKU {$sku} đã tồn tại."]]);
+                }
+
+                $variant = $this->productVariantRepository->create([
+                    ...$data,
+                    'product_id' => $product->id,
+                    'sku' => $sku,
+                    'combination_key' => $combinationKey,
+                ]);
+                $variant->options()->attach($optionIds->all());
+                $created->push($variant->load(['product', 'files', 'options.productVariantGroup.group']));
+            }
+
+            return ['variants' => $created, 'created' => $created->count(), 'skipped' => $skipped];
         });
     }
 
@@ -100,7 +191,7 @@ class ProductVariantService
             $variant->options()->sync($optionIds->all());
             $this->uploadImages($variant, $images);
 
-            return $variant->load(['files', 'options.productVariantGroup.group']);
+            return $variant->load(['product', 'files', 'options.productVariantGroup.group']);
         });
     }
 
@@ -159,5 +250,10 @@ class ProductVariantService
             'directory' => 'product-variants/' . $variant->id,
             'type' => 'image',
         ]);
+    }
+
+    private function skuPart(string $value): string
+    {
+        return Str::upper(Str::slug($value, '-'));
     }
 }

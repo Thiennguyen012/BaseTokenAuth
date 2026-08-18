@@ -1,16 +1,25 @@
 @foreach($config['fields'] as $field)
 @php($type = $field['type'])
-<div class="field {{ in_array($type, ['textarea','json','key_value','repeatable_values','files','single_file','lines','multi_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}">
+<div class="field {{ in_array($type, ['textarea','json','key_value','repeatable_values','files','single_file','lines','multi_select_api','searchable_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}" data-field-name="{{ $field['name'] }}">
     @if($type === 'checkbox')
-        <label class="check"><input type="checkbox" name="{{ $field['name'] }}" value="1"> {{ $field['label'] }}</label>
+        <label class="check"><input type="checkbox" name="{{ $field['name'] }}" value="1" @checked($field['default'] ?? false)> {{ $field['label'] }}</label>
     @else
         <label for="{{ $field['name'] }}">{{ $field['label'] }}</label>
         @if(in_array($type, ['textarea','json','lines']))
             <textarea class="input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" data-type="{{ $type }}" placeholder="{{ $field['placeholder'] ?? '' }}" {{ ($field['required'] ?? false) ? 'required' : '' }}></textarea>
         @elseif($type === 'select_api')
-            <select class="input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" data-type="select_api" data-source="{{ $field['source'] }}" data-value="{{ $field['value'] }}" data-text="{{ $field['text'] }}" {{ ($field['required'] ?? false) ? 'required' : '' }}>
+            <select class="input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" data-type="select_api" data-source="{{ $field['source'] }}" data-value="{{ $field['value'] }}" data-text="{{ $field['text'] }}" @if($field['lock_on_edit'] ?? false) data-lock-on-edit="1" @endif {{ ($field['required'] ?? false) ? 'required' : '' }}>
                 <option value="">-- Chọn {{ mb_strtolower($field['label']) }} --</option>
             </select>
+        @elseif($type === 'searchable_select_api')
+            <div class="searchable-select" data-type="searchable_select_api" data-source="{{ $field['source'] }}" data-value="{{ $field['value'] }}" data-text="{{ $field['text'] }}">
+                <input type="hidden" id="{{ $field['name'] }}" name="{{ $field['name'] }}">
+                <div class="searchable-select-control">
+                    <span class="searchable-select-icon">⌕</span>
+                    <input class="input searchable-select-input" type="search" autocomplete="off" placeholder="{{ $field['placeholder'] ?? 'Nhập để tìm kiếm' }}" data-searchable-input @if($field['lock_on_edit'] ?? false) data-lock-on-edit="1" @endif {{ ($field['required'] ?? false) ? 'required' : '' }}>
+                </div>
+                <div class="searchable-select-results" data-searchable-results hidden></div>
+            </div>
         @elseif($type === 'multi_select_api')
             <div class="category-picker" data-type="multi_select_api" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] }}" data-value="{{ $field['value'] }}" data-text="{{ $field['text'] }}">
                 <select class="input" data-category-choice data-placeholder="{{ $field['placeholder'] ?? '-- Chọn danh mục để thêm --' }}"><option value="">{{ $field['placeholder'] ?? '-- Chọn danh mục để thêm --' }}</option></select>
@@ -25,7 +34,7 @@
         @elseif($type === 'product_variant_groups')
             <div class="relation-picker" data-type="product_variant_groups" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] }}"><div class="relation-loading">Đang tải nhóm biến thể...</div></div>
         @elseif($type === 'variant_options')
-            <div class="relation-picker" data-type="variant_options" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] }}"><div class="relation-loading">Đang tải giá trị biến thể...</div></div>
+            <div class="relation-picker" data-type="variant_options" data-name="{{ $field['name'] }}" data-source="{{ $field['source'] ?? '' }}"><div class="relation-loading">Chọn sản phẩm để tải các giá trị biến thể.</div></div>
         @elseif($type === 'key_value')
             <div class="key-value-editor" data-type="key_value" data-name="{{ $field['name'] }}" data-key-placeholder="{{ $field['key_placeholder'] ?? 'Tên mục' }}" data-value-placeholder="{{ $field['value_placeholder'] ?? 'Nhập giá trị' }}">
                 <div class="key-value-toolbar"><small>Thêm từng nền tảng và đường dẫn tương ứng.</small><button type="button" class="btn compact" data-add-key-value>＋ Thêm mạng xã hội</button></div>
@@ -46,7 +55,10 @@
                 :multiple="$type === 'files'"
             />
         @else
-            <input class="input" id="{{ $field['name'] }}" type="{{ $type }}" name="{{ $field['name'] }}" placeholder="{{ $field['placeholder'] ?? '' }}" {{ ($field['required'] ?? false) ? 'required' : '' }}>
+            <input class="input" id="{{ $field['name'] }}" type="{{ $type }}" name="{{ $field['name'] }}" placeholder="{{ $field['placeholder'] ?? '' }}" @if(isset($field['min'])) min="{{ $field['min'] }}" @endif @if(isset($field['max'])) max="{{ $field['max'] }}" @endif @if(isset($field['step'])) step="{{ $field['step'] }}" @endif {{ ($field['required'] ?? false) ? 'required' : '' }}>
+        @endif
+        @if(!empty($field['help']))
+            <small class="field-help">{{ $field['help'] }}</small>
         @endif
     @endif
 </div>

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Product;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use OpenApi\Annotations as OA;
 
@@ -13,6 +14,7 @@ use OpenApi\Annotations as OA;
  *     schema="UpdateProductRequest",
  *     @OA\Property(property="_method", type="string", example="PUT"),
  *     @OA\Property(property="product_name", type="string", maxLength=255),
+ *     @OA\Property(property="slug", type="string", maxLength=255, nullable=true),
  *     @OA\Property(property="sku", type="string", maxLength=100, nullable=true),
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="is_active", type="boolean"),
@@ -34,6 +36,13 @@ use OpenApi\Annotations as OA;
  */
 class UpdateProductRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('slug')) {
+            $this->merge(['slug' => Str::slug((string) $this->input('slug'))]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -45,6 +54,13 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'product_name' => 'sometimes|string|max:255',
+            'slug' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'slug')->ignore($productId),
+            ],
             'sku' => [
                 'sometimes',
                 'nullable',
@@ -78,6 +94,7 @@ class UpdateProductRequest extends FormRequest
         return [
             'product_name.string' => __('validation.custom.product.product_name.string'),
             'product_name.max' => __('validation.custom.product.product_name.max'),
+            'slug.unique' => 'Slug sản phẩm đã tồn tại.',
             'sku.string' => __('validation.custom.product.sku.string'),
             'sku.max' => __('validation.custom.product.sku.max'),
             'sku.unique' => __('validation.custom.product.sku.unique'),

@@ -51,6 +51,42 @@ class ProductVariantServiceTest extends TestCase
         ]);
     }
 
+    public function test_it_creates_all_option_combinations_and_skips_existing_ones(): void
+    {
+        [$product, $colorRed, $sizeM] = $this->catalog();
+        $colorConfiguration = $colorRed->productVariantGroup;
+        $sizeConfiguration = $sizeM->productVariantGroup;
+        $colorConfiguration->options()->create(['option_code' => 'blue', 'option_name' => 'Blue', 'is_active' => true]);
+        $sizeConfiguration->options()->create(['option_code' => 'l', 'option_name' => 'L', 'is_active' => true]);
+
+        $service = app(ProductVariantService::class);
+        $first = $service->createAllCombinations([
+            'product_id' => $product->id,
+            'price' => 100,
+            'stock' => 5,
+            'is_active' => true,
+            'generate_all_combinations' => true,
+        ]);
+
+        $this->assertSame(4, $first['created']);
+        $this->assertSame(0, $first['skipped']);
+        $this->assertDatabaseCount('product_variants', 4);
+        $this->assertDatabaseCount('product_variant_values', 8);
+
+        $filtered = $service->paginate(10, '', $product->id, [$colorRed->id, $sizeM->id]);
+        $this->assertCount(1, $filtered);
+        $this->assertSame([$colorRed->id, $sizeM->id], $filtered->first()->options->pluck('id')->sort()->values()->all());
+
+        $second = $service->createAllCombinations([
+            'product_id' => $product->id,
+            'generate_all_combinations' => true,
+        ]);
+
+        $this->assertSame(0, $second['created']);
+        $this->assertSame(4, $second['skipped']);
+        $this->assertDatabaseCount('product_variants', 4);
+    }
+
     public function test_it_rejects_an_option_from_an_unconfigured_group(): void
     {
         [$product, $colorRed, $sizeM] = $this->catalog();

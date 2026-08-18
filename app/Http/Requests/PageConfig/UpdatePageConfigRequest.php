@@ -9,8 +9,10 @@ use OpenApi\Annotations as OA;
  * @OA\Schema(
  *     schema="UpdatePageConfigRequest",
  *     @OA\Property(property="company_name", type="string", maxLength=255),
+ *     @OA\Property(property="slogan", type="string", maxLength=255, nullable=true),
  *     @OA\Property(property="addresses", type="array", @OA\Items(type="string", maxLength=255)),
  *     @OA\Property(property="hotline", type="string", maxLength=255),
+ *     @OA\Property(property="email", type="string", format="email", maxLength=255, nullable=true),
  *     @OA\Property(property="working_hour", type="string", maxLength=255),
  *     @OA\Property(property="socials", type="object"),
  *     @OA\Property(property="favicon", type="string", format="binary"),
@@ -28,9 +30,11 @@ class UpdatePageConfigRequest extends FormRequest
     {
         return [
             'company_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'slogan' => ['sometimes', 'nullable', 'string', 'max:255'],
             'addresses' => ['sometimes', 'nullable', 'array'],
             'addresses.*' => ['required', 'string', 'max:255'],
             'hotline' => ['sometimes', 'nullable', 'numeric', 'max_digits:255'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'working_hour' => ['sometimes', 'nullable', 'string', 'max:255'],
             'socials' => ['sometimes', 'nullable', 'array'],
             'socials.*' => ['required', 'url', 'max:2048'],

@@ -4,6 +4,8 @@ window.CMS = (() => {
     const api = () => document.body.dataset.api || '/admin/api';
     const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
     let loggingOut = false;
+    let refreshPromise = null;
+    let refreshTimer = null;
 
     function expireSession() {
         if (loggingOut) return;
@@ -31,13 +33,68 @@ window.CMS = (() => {
         sessionStorage.setItem(toastKey, JSON.stringify({message, error}));
     }
 
-    async function request(path, options = {}) {
-        const token = document.body.dataset.accessToken || localStorage.getItem(tokenKey);
-        options.headers = {Accept: 'application/json', ...(token ? {Authorization: `Bearer ${token}`} : {}), ...(options.headers || {})};
-        const response = await fetch(api() + path, options);
+    function scheduleTokenRefresh(expiresAt) {
+        clearTimeout(refreshTimer);
+        const delay = Math.max(0, Number(expiresAt) * 1000 - Date.now() - 30000);
+        refreshTimer = setTimeout(() => {
+            refreshAccessToken().catch(expireSession);
+        }, delay);
+    }
+
+    async function refreshAccessToken() {
+        if (refreshPromise) return refreshPromise;
+        refreshPromise = (async () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const response = await fetch(document.body.dataset.refreshUrl || '/cms/refresh-token', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    ...(csrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
+                },
+            });
+            let body = {};
+            try { body = await response.json(); } catch {}
+            if (!response.ok || !body.data?.access_token) {
+                throw new Error(body.message || 'Không thể làm mới phiên đăng nhập.');
+            }
+
+            const token = body.data.access_token;
+            const expiresAt = Number(body.data.access_token_expires_at || 0);
+            localStorage.setItem(tokenKey, token);
+            document.body.dataset.accessToken = token;
+            document.body.dataset.accessTokenExpiresAt = String(expiresAt);
+            if (expiresAt) scheduleTokenRefresh(expiresAt);
+            return token;
+        })().finally(() => { refreshPromise = null; });
+
+        return refreshPromise;
+    }
+
+    async function request(path, options = {}, canRefresh = true) {
+        const token = localStorage.getItem(tokenKey) || document.body.dataset.accessToken;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const customHeaders = {...(options.headers || {})};
+        delete customHeaders.Authorization;
+        delete customHeaders.authorization;
+        const requestOptions = {...options, headers: {
+            Accept: 'application/json',
+            ...(token ? {Authorization: `Bearer ${token}`} : {}),
+            ...(csrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
+            ...customHeaders,
+        }};
+        const response = await fetch(api() + path, requestOptions);
         let body = {};
         try { body = await response.json(); } catch {}
-        if (response.status === 401) {
+        if (response.status === 401 && canRefresh) {
+            try {
+                await refreshAccessToken();
+                return request(path, options, false);
+            } catch (error) {
+                expireSession();
+                throw new Error(error.message || 'Phiên đăng nhập đã hết hạn');
+            }
+        }
+        if (response.status === 401 || response.status === 419) {
             expireSession();
             throw new Error('Phiên đăng nhập đã hết hạn');
         }
@@ -60,11 +117,7 @@ window.CMS = (() => {
             } catch {}
         }
         const expiresAt = Number(document.body.dataset.accessTokenExpiresAt || 0) * 1000;
-        if (expiresAt) {
-            const remaining = expiresAt - Date.now();
-            if (remaining <= 0) expireSession();
-            else setTimeout(expireSession, remaining);
-        }
+        if (expiresAt) scheduleTokenRefresh(expiresAt / 1000);
         document.querySelector('[data-menu]')?.addEventListener('click', () => document.querySelector('[data-sidebar]')?.classList.toggle('open'));
     }
 
@@ -75,6 +128,17 @@ window.CMS = (() => {
     }
 
     function tableValue(key, value) {
+        if (key === 'first_image') {
+            if (!value) return '<span class="table-image-empty">Chưa có ảnh</span>';
+            const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
+            const url = value.external_url || (value.path ? `${storage}/${String(value.path).replace(/^\//, '')}` : '');
+            return url
+                ? `<img class="table-image" src="${esc(url)}" alt="${esc(value.title || value.file_name || 'Ảnh biến thể')}" loading="lazy">`
+                : '<span class="table-image-empty">Chưa có ảnh</span>';
+        }
+        if (key === 'price' && value !== null && value !== undefined && value !== '') {
+            return `${new Intl.NumberFormat('vi-VN').format(Number(value))} ₫`;
+        }
         if (key === 'category_names') {
             const full = String(value || '—');
             const short = full.length > 45 ? `${full.slice(0, 45).trim()}...` : full;
@@ -154,6 +218,7 @@ window.CMS = (() => {
             ['dragleave', 'drop'].forEach(name => zone.addEventListener(name, event => { event.preventDefault(); zone.classList.remove('dragover'); }));
             zone.addEventListener('drop', event => add([...event.dataTransfer.files]));
             upload._showExisting = existing => { preview.querySelectorAll('.existing').forEach(item => item.remove()); (existing || []).forEach(file => preview.appendChild(renderUploadItem(file, 'existing'))); };
+            upload._clearNewFiles = () => { files = []; sync(); input.value = ''; };
         });
     }
 
@@ -161,6 +226,7 @@ window.CMS = (() => {
         const root = document.querySelector('.module-table');
         const endpoint = root.dataset.endpoint;
         const editUrl = root.dataset.editUrl;
+        const fixedParams = JSON.parse(root.dataset.fixedParams || '{}');
         const columns = JSON.parse(root.querySelector('[data-columns]').textContent);
         const tbody = root.querySelector('[data-table-body]');
         const filters = [...root.querySelectorAll('[data-filter-name]')];
@@ -169,13 +235,25 @@ window.CMS = (() => {
             tbody.innerHTML = `<tr><td class="empty loading-state" colspan="${columns.length + 1}">Đang tải dữ liệu...</td></tr>`;
             try {
                 const params = new URLSearchParams({per_page: '50', search});
+                Object.entries(fixedParams).forEach(([name, value]) => params.set(name, value));
                 filters.forEach(filter => {
-                    if (filter.dataset.filterMultiple) (filter._selected || []).forEach(item => params.append(`${filter.dataset.filterName}[]`, item.id));
-                    else if (filter.value) params.set(filter.dataset.filterName, filter.value);
+                    const explicitQueryName = filter.dataset.filterQueryName;
+                    if (filter.dataset.filterMultiple) {
+                        const queryName = explicitQueryName || `${filter.dataset.filterName}[]`;
+                        (filter._selected || []).forEach(item => params.append(queryName, item.id));
+                    } else if (filter.value) {
+                        if (explicitQueryName) params.append(explicitQueryName, filter.value);
+                        else params.set(filter.dataset.filterName, filter.value);
+                    }
                 });
                 const result = await request(`/${endpoint}?${params.toString()}`);
                 const rows = result.data || [];
-                tbody.innerHTML = rows.length ? rows.map(row => `<tr>${columns.map(key => `<td>${tableValue(key, row[key])}</td>`).join('')}<td><div class="actions"><a class="btn icon-button" href="${editUrl}/${row.id}/edit" title="Sửa" aria-label="Sửa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></a><button class="btn icon-button danger-icon delete" data-id="${row.id}" title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></td></tr>`).join('') : `<tr><td class="empty" colspan="${columns.length + 1}">Chưa có dữ liệu</td></tr>`;
+                tbody.innerHTML = rows.length ? rows.map(row => {
+                    const variantsAction = endpoint === 'products'
+                        ? `<a class="btn icon-button variants-link" href="/cms/products/${row.id}/variants" title="Quản lý biến thể" aria-label="Quản lý biến thể"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>`
+                        : '';
+                    return `<tr>${columns.map(key => `<td>${tableValue(key, row[key])}</td>`).join('')}<td><div class="actions">${variantsAction}<a class="btn icon-button" href="${editUrl}/${row.id}/edit" title="Sửa" aria-label="Sửa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></a><button class="btn icon-button danger-icon delete" data-id="${row.id}" title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></td></tr>`;
+                }).join('') : `<tr><td class="empty" colspan="${columns.length + 1}">Chưa có dữ liệu</td></tr>`;
                 tbody.querySelectorAll('.delete').forEach(button => button.onclick = async () => {
                     if (!confirm('Bạn chắc chắn muốn xóa?')) return;
                     try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa'); load(); }
@@ -185,8 +263,9 @@ window.CMS = (() => {
         }
         const searchInput = root.querySelector('[data-search]');
         Promise.all(filters.map(async filter => {
-            const result = await request(`/${filter.dataset.source}?per_page=100`);
-            const items = result.data || [];
+            const items = filter.dataset.inlineItems
+                ? JSON.parse(filter.dataset.inlineItems)
+                : ((await request(`/${filter.dataset.source}?per_page=100`)).data || []);
             if (filter.dataset.filterMultiple) {
                 filter._selected = [];
                 const chips = filter.closest('[data-filter-wrap]').querySelector('[data-filter-chips]');
@@ -197,12 +276,12 @@ window.CMS = (() => {
                 const renderCheckboxMenu = () => {
                     const selectedIds = new Set(filter._selected.map(item => String(item.id)));
                     filterSummary.textContent = selectedIds.size
-                        ? `Đã chọn ${selectedIds.size} danh mục`
-                        : (filter.dataset.filterLabel || 'Chọn danh mục để lọc');
+                        ? `Đã chọn ${selectedIds.size} giá trị`
+                        : (filter.dataset.filterLabel || 'Chọn giá trị để lọc');
                     filterMenu.innerHTML = items.length ? items.map(item => {
                         const id = String(item[filter.dataset.value]);
                         return `<label class="checkbox-filter-option"><input type="checkbox" value="${esc(id)}" ${selectedIds.has(id) ? 'checked' : ''}><span>${esc(item[filter.dataset.text])}</span></label>`;
-                    }).join('') : '<div class="checkbox-filter-empty">Chưa có danh mục</div>';
+                    }).join('') : '<div class="checkbox-filter-empty">Chưa có giá trị phù hợp</div>';
                     filterMenu.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.onchange = () => {
                         const item = items.find(value => String(value[filter.dataset.value]) === checkbox.value);
                         if (checkbox.checked && item && !filter._selected.some(value => String(value.id) === checkbox.value)) {
@@ -219,7 +298,7 @@ window.CMS = (() => {
                 };
                 const render = () => {
                     const selectedIds = new Set(filter._selected.map(item => String(item.id)));
-                    filter.innerHTML = `<option value="">Chọn danh mục để lọc</option>` + items.filter(item => !selectedIds.has(String(item[filter.dataset.value]))).map(item => `<option value="${item[filter.dataset.value]}">${esc(item[filter.dataset.text])}</option>`).join('');
+                    filter.innerHTML = `<option value="">${esc(filter.dataset.filterLabel || 'Chọn giá trị để lọc')}</option>` + items.filter(item => !selectedIds.has(String(item[filter.dataset.value]))).map(item => `<option value="${item[filter.dataset.value]}">${esc(item[filter.dataset.text])}</option>`).join('');
                     chips.innerHTML = filter._selected.map(item => `<span class="filter-chip">${esc(item.name)}<button type="button" data-remove-filter="${item.id}" aria-label="Bỏ bộ lọc">×</button></span>`).join('');
                     chips.querySelectorAll('[data-remove-filter]').forEach(button => button.onclick = () => {
                         filter._selected = filter._selected.filter(item => String(item.id) !== button.dataset.removeFilter);
@@ -580,6 +659,75 @@ window.CMS = (() => {
         render();
     }
 
+    function setupSearchableSelect(picker) {
+        const input = picker.querySelector('[data-searchable-input]');
+        const hidden = picker.querySelector('input[type="hidden"]');
+        const results = picker.querySelector('[data-searchable-results]');
+        let timer;
+        let sequence = 0;
+
+        const close = () => { results.hidden = true; };
+        const select = (id, label, notify = true) => {
+            hidden.value = id ?? '';
+            input.value = label ?? '';
+            input.setCustomValidity(hidden.value ? '' : 'Vui lòng chọn sản phẩm trong danh sách.');
+            close();
+            if (notify) hidden.dispatchEvent(new Event('change', {bubbles: true}));
+        };
+        const render = items => {
+            results.innerHTML = items.length
+                ? items.map(item => {
+                    const image = Array.isArray(item.images) ? item.images[0] : null;
+                    const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
+                    const imageUrl = image?.external_url || (image?.path ? `${storage}/${String(image.path).replace(/^\//, '')}` : '');
+                    const categories = item.category_names || (item.categories || []).map(category => category.category_name).join(', ') || 'Chưa có danh mục';
+                    return `<button type="button" class="searchable-select-option product-search-option" data-id="${item[picker.dataset.value]}">
+                        <span class="product-search-thumb">${imageUrl ? `<img src="${esc(imageUrl)}" alt="">` : '<span>Không có ảnh</span>'}</span>
+                        <span class="product-search-info">
+                            <strong>${esc(item[picker.dataset.text])}</strong>
+                            <span class="product-search-meta"><span>SKU: ${esc(item.sku || '—')}</span><span title="${esc(categories)}">Danh mục: ${esc(categories)}</span></span>
+                        </span>
+                        <span class="product-search-status">
+                            <span class="badge ${item.is_active ? 'on' : ''}">${item.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}</span>
+                            <span class="badge ${item.is_featured ? 'featured' : ''}">${item.is_featured ? 'Nổi bật' : 'Không nổi bật'}</span>
+                        </span>
+                    </button>`;
+                }).join('')
+                : '<div class="searchable-select-empty">Không tìm thấy sản phẩm phù hợp.</div>';
+            results.hidden = false;
+            results.querySelectorAll('[data-id]').forEach((button, index) => {
+                button.onclick = () => select(items[index][picker.dataset.value], items[index][picker.dataset.text]);
+            });
+        };
+        const search = async keyword => {
+            const current = ++sequence;
+            results.innerHTML = '<div class="searchable-select-empty">Đang tìm sản phẩm...</div>';
+            results.hidden = false;
+            try {
+                const query = new URLSearchParams({search: keyword, per_page: '20'});
+                const response = await request(`/${picker.dataset.source}?${query}`);
+                if (current === sequence) render(response.data || []);
+            } catch (error) {
+                if (current === sequence) close();
+                throw error;
+            }
+        };
+
+        input.addEventListener('input', () => {
+            hidden.value = '';
+            input.setCustomValidity('Vui lòng chọn sản phẩm trong danh sách.');
+            clearTimeout(timer);
+            const keyword = input.value.trim();
+            if (!keyword) return close();
+            timer = setTimeout(() => search(keyword).catch(error => toast(error.message, true)), 250);
+        });
+        input.addEventListener('focus', () => {
+            if (input.value.trim() && !hidden.value) search(input.value.trim()).catch(error => toast(error.message, true));
+        });
+        document.addEventListener('click', event => { if (!picker.contains(event.target)) close(); });
+        picker._setValue = (id, label) => select(id, label, false);
+    }
+
     async function loadSources(form) {
         await Promise.all([...form.querySelectorAll('[data-type="select_api"]')].map(async select => {
             const result = await request(`/${select.dataset.source}?per_page=50`);
@@ -589,6 +737,7 @@ window.CMS = (() => {
             const result = await request(`/${picker.dataset.source}?per_page=50`);
             setupCategoryPicker(picker, result.data || []);
         }));
+        form.querySelectorAll('[data-type="searchable_select_api"]').forEach(setupSearchableSelect);
         await Promise.all([...form.querySelectorAll('.relation-picker')].map(async picker => {
             if (picker.dataset.type === 'variant_options') {
                 picker.innerHTML = '<div class="relation-loading">Chọn sản phẩm để tải các giá trị biến thể.</div>';
@@ -613,6 +762,7 @@ window.CMS = (() => {
             return;
         }
         const result = await request(`/products/${productId}`);
+        form._variantProduct = result.data || null;
         const configurations = result.data?.variant_groups || [];
         if (groupSelect) {
             const oldValue = groupSelect.value;
@@ -620,8 +770,85 @@ window.CMS = (() => {
             groupSelect.value = oldValue;
         }
         if (optionPicker) {
-            optionPicker.innerHTML = configurations.length ? configurations.map(configuration => `<fieldset class="option-group"><legend>${esc(configuration.group_name)}</legend>${(configuration.options || []).map(option => `<label class="option-choice"><input type="checkbox" value="${option.id}" data-option-id> ${esc(option.option_name)} <small>(${esc(option.option_code)})</small></label>`).join('') || '<small>Chưa có giá trị cho sản phẩm này</small>'}</fieldset>`).join('') : '<div class="relation-loading">Sản phẩm chưa cấu hình nhóm biến thể.</div>';
+            const groupsHtml = configurations.length ? configurations.map(configuration => {
+                const options = (configuration.options || []).filter(option => option.is_active !== false);
+                const requiredBadge = configuration.is_required ? '<span class="required-badge">Bắt buộc</span>' : '<span class="optional-badge">Không bắt buộc</span>';
+                const choices = options.map(option => `<label class="option-choice"><input type="radio" name="_variant_group_${configuration.id}" value="${option.id}" data-option-id data-option-code="${esc(option.option_code)}" ${configuration.is_required ? 'required' : ''}> <span>${esc(option.option_name)} <small>(${esc(option.option_code)})</small></span></label>`).join('');
+                const emptyChoice = configuration.is_required ? '' : `<label class="option-choice"><input type="radio" name="_variant_group_${configuration.id}" value="" checked> <span>Không chọn</span></label>`;
+                return `<fieldset class="option-group" data-required="${configuration.is_required ? '1' : '0'}"><legend><span>${esc(configuration.group_name)}</span>${requiredBadge}</legend>${options.length ? emptyChoice + choices : '<div class="option-group-empty">Nhóm này chưa có giá trị hoạt động.</div>'}</fieldset>`;
+            }).join('') : '<div class="relation-loading">Sản phẩm chưa cấu hình nhóm biến thể.</div>';
+            optionPicker.innerHTML = configurations.length
+                ? `<div class="variant-option-toolbar"><span>Chọn giá trị cho từng nhóm biến thể</span><button type="button" class="btn compact" data-reset-variant-options>↻ Đặt lại giá trị</button></div>${groupsHtml}${form.dataset.recordId ? '' : '<label class="generate-combinations"><input type="checkbox" name="generate_all_combinations" value="1" data-generate-combinations> <span><strong>Tạo tất cả tổ hợp biến thể</strong><small>Tự động tạo một biến thể cho mỗi tổ hợp từ các giá trị đang hoạt động.</small></span></label>'}`
+                : groupsHtml;
+            optionPicker.onchange = event => {
+                if (event.target.matches('input[type="radio"]')) suggestVariantSku(form);
+            };
+            optionPicker.querySelector('[data-reset-variant-options]')?.addEventListener('click', () => {
+                optionPicker.querySelectorAll('.option-group').forEach(group => {
+                    group.querySelectorAll('input[type="radio"]').forEach(input => { input.checked = false; });
+                    if (group.dataset.required !== '1') {
+                        const emptyChoice = group.querySelector('input[type="radio"]:not([data-option-id])');
+                        if (emptyChoice) emptyChoice.checked = true;
+                    }
+                });
+                const skuInput = form.querySelector('[name="sku"]');
+                if (skuInput?.dataset.autoSuggested === '1') {
+                    skuInput.value = '';
+                    delete skuInput.dataset.autoSuggested;
+                }
+            });
+            optionPicker.querySelector('[data-generate-combinations]')?.addEventListener('change', event => {
+                const enabled = event.target.checked;
+                optionPicker.querySelectorAll('.option-group input[type="radio"]').forEach(input => { input.disabled = enabled; });
+                optionPicker.querySelectorAll('.option-group').forEach(group => group.classList.toggle('bulk-disabled', enabled));
+                const skuInput = form.querySelector('[name="sku"]');
+                if (skuInput) {
+                    skuInput.required = !enabled;
+                    if (enabled && skuInput.dataset.autoSuggested === '1') {
+                        skuInput.value = '';
+                        delete skuInput.dataset.autoSuggested;
+                    }
+                    skuInput.placeholder = enabled ? 'SKU sẽ được tự động tạo cho từng tổ hợp' : 'Nhập mã SKU';
+                }
+                const imageField = form.querySelector('[data-field-name="images"]');
+                if (imageField) {
+                    imageField.hidden = enabled;
+                    if (enabled) imageField.querySelector('[data-multi-upload]')?._clearNewFiles?.();
+                }
+            });
+            suggestVariantSku(form);
         }
+    }
+
+    function skuPart(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/gi, 'd')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    function suggestVariantSku(form) {
+        const skuInput = form.querySelector('[name="sku"]');
+        const optionPicker = form.querySelector('[data-type="variant_options"]');
+        const product = form._variantProduct;
+        if (!skuInput || !optionPicker || !product) return;
+        if (skuInput.value.trim() && skuInput.dataset.autoSuggested !== '1') return;
+
+        const groups = [...optionPicker.querySelectorAll('.option-group')];
+        if (!groups.length || groups.some(group => !group.querySelector('input[type="radio"]:checked'))) return;
+
+        const optionCodes = groups
+            .map(group => group.querySelector('[data-option-id]:checked')?.dataset.optionCode)
+            .filter(Boolean)
+            .map(skuPart);
+        if (!optionCodes.length) return;
+
+        const productCode = skuPart(product.sku || product.product_name || `SP-${product.id}`);
+        skuInput.value = [productCode, ...optionCodes].filter(Boolean).join('-').slice(0, 100);
+        skuInput.dataset.autoSuggested = '1';
     }
 
     function setupGroupPicker(picker) {
@@ -862,6 +1089,7 @@ window.CMS = (() => {
             else input.value = value;
         });
         if (row.product_id) {
+            form.querySelector('[data-type="searchable_select_api"]')?._setValue?.(row.product_id, row.product_name || `#${row.product_id}`);
             await loadProductContext(form, row.product_id);
             const groupSelect = form.querySelector('[data-type="product_group_select"]');
             if (groupSelect && row.product_variant_group_id) groupSelect.value = row.product_variant_group_id;
@@ -880,7 +1108,15 @@ window.CMS = (() => {
             setProductOptions(line, selected.options || []);
         });
         if (groupPicker?._updateSelection) groupPicker._updateSelection();
-        form.querySelectorAll('[data-multi-upload]').forEach(upload => upload._showExisting?.(row[upload.dataset.fieldName] || []));
+        form.querySelectorAll('[data-multi-upload]').forEach(upload => {
+            const fieldName = upload.dataset.fieldName;
+            let existing = row[fieldName] || [];
+            if (!Array.isArray(existing) && existing) existing = [existing];
+            if (!existing.length && upload.dataset.singleUpload && row[`${fieldName}_path`]) {
+                existing = [{path: row[`${fieldName}_path`]}];
+            }
+            upload._showExisting?.(existing);
+        });
         form.querySelectorAll('[data-type="key_value"]').forEach(editor => editor._setValue?.(row[editor.dataset.name] || {}));
         form.querySelectorAll('[data-type="repeatable_values"]').forEach(editor => editor._setValue?.(row[editor.dataset.name] || []));
         const optionPicker = form.querySelector('[data-type="variant_options"]');
@@ -925,7 +1161,16 @@ window.CMS = (() => {
         const optionPicker = form.querySelector('[data-type="variant_options"]');
         if (optionPicker) {
             formData.delete('option_ids');
-            optionPicker.querySelectorAll('[data-option-id]:checked').forEach(checkbox => formData.append('option_ids[]', checkbox.value));
+            if (optionPicker.querySelector('[data-generate-combinations]:checked')) return;
+            const missingRequired = [...optionPicker.querySelectorAll('.option-group[data-required="1"]')]
+                .find(group => !group.querySelector('[data-option-id]:checked'));
+            if (missingRequired) {
+                const groupName = missingRequired.querySelector('legend span')?.textContent || 'bắt buộc';
+                throw new Error(`Vui lòng chọn một giá trị cho nhóm ${groupName}.`);
+            }
+            const selectedOptions = [...optionPicker.querySelectorAll('[data-option-id]:checked')];
+            if (!selectedOptions.length) throw new Error('Vui lòng chọn ít nhất một giá trị biến thể.');
+            selectedOptions.forEach(option => formData.append('option_ids[]', option.value));
         }
     }
 
@@ -934,12 +1179,28 @@ window.CMS = (() => {
         const endpoint = form.dataset.endpoint;
         const id = form.dataset.recordId;
         const indexUrl = form.dataset.indexUrl;
+        const skuInput = form.querySelector('[name="sku"]');
+        skuInput?.addEventListener('input', () => { skuInput.dataset.autoSuggested = '0'; });
         try {
             setupMultiUploads(form);
             setupKeyValueEditors(form);
             setupRepeatableEditors(form);
             await loadSources(form);
-            if (id) { const result = await request(`/${endpoint}/${id}`); await fill(form, result.data || {}); }
+            if (id) {
+                const result = await request(`/${endpoint}/${id}`);
+                await fill(form, result.data || {});
+                form.querySelectorAll('[data-lock-on-edit]').forEach(input => input.disabled = true);
+            } else {
+                const productId = new URLSearchParams(location.search).get('product_id');
+                const productPicker = form.querySelector('[data-type="searchable_select_api"]');
+                if (productId && productPicker) {
+                    const result = await request(`/products/${productId}`);
+                    const product = result.data || {};
+                    productPicker._setValue?.(product.id, product.product_name || `#${productId}`);
+                    productPicker.querySelector('[data-searchable-input]').disabled = true;
+                    await loadProductContext(form, productId);
+                }
+            }
         } catch (error) { toast(error.message, true); }
         form.onsubmit = async event => {
             event.preventDefault();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Services\User\UserAuthService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -65,5 +66,35 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('cms.login');
+    }
+
+    public function refreshToken(Request $request): JsonResponse
+    {
+        $refreshToken = (string) $request->session()->get('cms_refresh_token', '');
+        if ($refreshToken === '') {
+            return response()->json(['message' => 'Refresh token không tồn tại.'], 401);
+        }
+
+        try {
+            $result = $this->authService->refresh($refreshToken);
+        } catch (ValidationException) {
+            return response()->json(['message' => 'Refresh token không hợp lệ hoặc đã hết hạn.'], 401);
+        }
+
+        $expiresAt = now()->addSeconds($result['access_token_expires_in'])->timestamp;
+        $request->session()->put([
+            'cms_access_token' => $result['access_token'],
+            'cms_refresh_token' => $result['refresh_token'],
+            'cms_access_token_expires_at' => $expiresAt,
+        ]);
+
+        return response()->json([
+            'message' => 'Đã làm mới phiên đăng nhập.',
+            'data' => [
+                'access_token' => $result['access_token'],
+                'access_token_expires_at' => $expiresAt,
+                'access_token_expires_in' => $result['access_token_expires_in'],
+            ],
+        ]);
     }
 }

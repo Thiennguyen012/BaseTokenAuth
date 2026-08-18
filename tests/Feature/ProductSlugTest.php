@@ -1,0 +1,38 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Products\Product;
+use App\Services\Product\ProductService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ProductSlugTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_service_generates_unique_product_slugs(): void
+    {
+        $service = app(ProductService::class);
+
+        $first = $service->create(['product_name' => 'Áo Thun Basic']);
+        $second = $service->create(['product_name' => 'Áo Thun Basic']);
+
+        $this->assertSame('ao-thun-basic', $first->slug);
+        $this->assertSame('ao-thun-basic-2', $second->slug);
+    }
+
+    public function test_public_product_detail_accepts_slug(): void
+    {
+        $product = Product::query()->create([
+            'product_name' => 'Ống nhựa PVC',
+            'slug' => 'ong-nhua-pvc',
+            'is_active' => true,
+        ]);
+
+        $this->getJson('/api/products/ong-nhua-pvc')
+            ->assertOk()
+            ->assertJsonPath('data.id', $product->id)
+            ->assertJsonPath('data.slug', 'ong-nhua-pvc');
+    }
+}

@@ -26,16 +26,18 @@ class LandingController extends Controller
         protected PageConfigService $pageConfig,
     ) {}
 
-    /** @OA\Get(path="/api/products", summary="Danh sách sản phẩm công khai đang hoạt động", tags={"Public"}, @OA\Parameter(name="search", in="query", @OA\Schema(type="string")), @OA\Parameter(name="category_ids[]", in="query", description="Lọc AND theo danh mục", @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")), @OA\Response(response=200, description="Thành công")) */
+    /** @OA\Get(path="/api/products", summary="Danh sách sản phẩm công khai đang hoạt động", tags={"Public"}, @OA\Parameter(name="search", in="query", @OA\Schema(type="string")), @OA\Parameter(name="category_ids[]", in="query", description="Lọc AND theo danh mục", @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Parameter(name="sort", in="query", description="latest, price_asc, price_desc, name_asc hoặc name_desc", @OA\Schema(type="string")), @OA\Parameter(name="is_featured", in="query", @OA\Schema(type="boolean")), @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")), @OA\Response(response=200, description="Thành công")) */
     public function products(Request $request): JsonResponse
     {
         $limit = max(1, min((int) $request->query('per_page', Helpers::LIMIT_PER_PAGE), Helpers::LIMIT_PER_PAGE));
         $categoryIds = array_values(array_unique(array_filter(array_map('intval', (array) $request->query('category_ids', [])))));
-        $items = $this->products->paginatePublic($limit, (string) $request->query('search', ''), $categoryIds);
+        $sort = $this->normalizeProductSort((string) $request->query('sort', 'latest'));
+        $isFeatured = $request->has('is_featured') ? $request->boolean('is_featured') : null;
+        $items = $this->products->paginatePublic($limit, (string) $request->query('search', ''), $categoryIds, $sort, $isFeatured);
         return $this->paginated($items, ProductResource::collection($items->getCollection()), 'Lấy danh sách sản phẩm thành công');
     }
 
-    /** @OA\Get(path="/api/products/{id}", summary="Chi tiết sản phẩm công khai", tags={"Public"}, @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")), @OA\Response(response=200, description="Thành công"), @OA\Response(response=404, description="Không tồn tại")) */
+    /** @OA\Get(path="/api/products/{id}", summary="Chi tiết sản phẩm công khai theo ID hoặc slug", tags={"Public"}, @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")), @OA\Response(response=200, description="Thành công"), @OA\Response(response=404, description="Không tồn tại")) */
     public function product(string $id): JsonResponse
     {
         $item = $this->products->findPublic($id);
@@ -71,6 +73,13 @@ class LandingController extends Controller
     public function config(): JsonResponse
     {
         return response()->json(['status_code' => 200, 'message' => 'Lấy cấu hình trang thành công', 'data' => new PageConfigResource($this->pageConfig->singleton())]);
+    }
+
+    private function normalizeProductSort(string $sort): string
+    {
+        return in_array($sort, ['latest', 'price_asc', 'price_desc', 'name_asc', 'name_desc'], true)
+            ? $sort
+            : 'latest';
     }
 
     private function paginated($paginator, $data, string $message): JsonResponse

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Products\Product;
 use App\Services\Product\ProductService;
+use App\Http\Resources\ProductResource;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +28,8 @@ class ProductImageUploadTest extends TestCase
         ]);
 
         $this->assertCount(2, $product->files);
+        $resource = (new ProductResource($product))->toArray(Request::create('/'));
+        $this->assertSame($product->files->first()->id, $resource['first_image']->resource->id);
         $product->files->each(function ($file) use ($product): void {
             $this->assertSame(Product::class, $file->model_type);
             $this->assertSame($product->id, $file->model_id);

@@ -956,6 +956,17 @@
                         }
                     },
                     {
+                        "name": "option_ids[]",
+                        "in": "query",
+                        "description": "Lọc theo nhiều giá trị biến thể (AND)",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
                         "schema": {
@@ -1183,6 +1194,22 @@
                         "in": "query",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "latest, price_asc, price_desc, name_asc hoặc name_desc",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_featured",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái nổi bật",
+                        "schema": {
+                            "type": "boolean"
                         }
                     },
                     {
@@ -1538,6 +1565,21 @@
                         }
                     },
                     {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "latest, price_asc, price_desc, name_asc hoặc name_desc",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_featured",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
                         "schema": {
@@ -1557,7 +1599,7 @@
                 "tags": [
                     "Public"
                 ],
-                "summary": "Chi tiết sản phẩm công khai",
+                "summary": "Chi tiết sản phẩm công khai theo ID hoặc slug",
                 "operationId": "1e8b8ce14eddad466bd7b95e167f66d9",
                 "parameters": [
                     {
@@ -1565,7 +1607,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -2390,6 +2432,11 @@
                         "type": "string",
                         "maxLength": 255
                     },
+                    "slogan": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
                     "addresses": {
                         "type": "array",
                         "items": {
@@ -2399,6 +2446,12 @@
                     },
                     "hotline": {
                         "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true,
                         "maxLength": 255
                     },
                     "working_hour": {
@@ -2545,9 +2598,7 @@
             },
             "StoreProductVariantRequest": {
                 "required": [
-                    "product_id",
-                    "sku",
-                    "option_ids"
+                    "product_id"
                 ],
                 "properties": {
                     "product_id": {
@@ -2579,6 +2630,10 @@
                         "items": {
                             "type": "integer"
                         }
+                    },
+                    "generate_all_combinations": {
+                        "description": "Tạo toàn bộ tổ hợp từ các option đang hoạt động",
+                        "type": "boolean"
                     },
                     "images[]": {
                         "type": "array",
@@ -2644,6 +2699,12 @@
                     "product_name": {
                         "type": "string",
                         "example": "Áo thun basic",
+                        "maxLength": 255
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "ao-thun-basic",
+                        "nullable": true,
                         "maxLength": 255
                     },
                     "sku": {
@@ -2712,6 +2773,11 @@
                     },
                     "product_name": {
                         "type": "string",
+                        "maxLength": 255
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true,
                         "maxLength": 255
                     },
                     "sku": {
@@ -3039,6 +3105,10 @@
                     "company_name": {
                         "type": "string"
                     },
+                    "slogan": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "addresses": {
                         "type": "array",
                         "items": {
@@ -3047,6 +3117,11 @@
                     },
                     "hotline": {
                         "type": "string",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
                         "nullable": true
                     },
                     "working_hour": {
@@ -3171,6 +3246,10 @@
                     "product_name": {
                         "type": "string"
                     },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "sku": {
                         "type": "string",
                         "nullable": true
@@ -3196,6 +3275,14 @@
                         "items": {
                             "$ref": "#/components/schemas/FileResource"
                         }
+                    },
+                    "first_image": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/FileResource"
+                            }
+                        ],
+                        "nullable": true
                     },
                     "variant_groups": {
                         "type": "array",
@@ -3259,6 +3346,9 @@
                     "product_id": {
                         "type": "integer"
                     },
+                    "product_name": {
+                        "type": "string"
+                    },
                     "sku": {
                         "type": "string"
                     },
@@ -3278,6 +3368,14 @@
                         "items": {
                             "$ref": "#/components/schemas/FileResource"
                         }
+                    },
+                    "first_image": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/FileResource"
+                            }
+                        ],
+                        "nullable": true
                     },
                     "options": {
                         "type": "array",

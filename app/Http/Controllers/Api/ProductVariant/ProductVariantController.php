@@ -29,6 +29,7 @@ class ProductVariantController extends Controller
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="product_id", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="option_ids[]", in="query", description="Lọc theo nhiều giá trị biến thể (AND)", @OA\Schema(type="array", @OA\Items(type="integer"))),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Thành công"),
      *     @OA\Response(response=401, description="Chưa xác thực")
@@ -40,7 +41,8 @@ class ProductVariantController extends Controller
         $perPage = $perPage > 0 ? min($perPage, Helpers::LIMIT_PER_PAGE) : Helpers::LIMIT_PER_PAGE;
         $search = (string) $request->query('search', '');
         $productId = $request->filled('product_id') ? (int) $request->query('product_id') : null;
-        $variants = $this->productVariantService->paginate($perPage, $search, $productId);
+        $optionIds = array_values(array_unique(array_filter(array_map('intval', (array) $request->query('option_ids', [])))));
+        $variants = $this->productVariantService->paginate($perPage, $search, $productId, $optionIds);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,
@@ -76,6 +78,17 @@ class ProductVariantController extends Controller
     public function store(StoreProductVariantRequest $request): JsonResponse
     {
         try {
+            if ($request->boolean('generate_all_combinations')) {
+                $result = $this->productVariantService->createAllCombinations($request->validated());
+
+                return response()->json([
+                    'status_code' => Response::HTTP_CREATED,
+                    'message' => "Đã tạo {$result['created']} biến thể, bỏ qua {$result['skipped']} tổ hợp đã tồn tại.",
+                    'data' => ProductVariantResource::collection($result['variants']),
+                    'meta' => ['created' => $result['created'], 'skipped' => $result['skipped']],
+                ], Response::HTTP_CREATED);
+            }
+
             $productVariant = $this->productVariantService->create($request->validated());
 
             return response()->json([

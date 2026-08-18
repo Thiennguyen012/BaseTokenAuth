@@ -4,9 +4,6 @@
     <div class="nav-label">Quản lý sản phẩm</div>
     <a class="nav-item {{ request()->routeIs('cms.products.*') ? 'active' : '' }}" href="{{ route('cms.products.index') }}">▣ Sản phẩm</a>
     <a class="nav-item {{ request()->routeIs('cms.categories.*') ? 'active' : '' }}" href="{{ route('cms.categories.index') }}">◇ Danh mục sản phẩm</a>
-    <a class="nav-item {{ request()->routeIs('cms.variant-groups.*') ? 'active' : '' }}" href="{{ route('cms.variant-groups.index') }}">⌘ Nhóm biến thể</a>
-    <a class="nav-item {{ request()->routeIs('cms.variant-options.*') ? 'active' : '' }}" href="{{ route('cms.variant-options.index') }}">◉ Giá trị biến thể</a>
-    <a class="nav-item {{ request()->routeIs('cms.product-variants.*') ? 'active' : '' }}" href="{{ route('cms.product-variants.index') }}">◫ Biến thể sản phẩm</a>
     <div class="nav-label">Nội dung & bố cục</div>
     <a class="nav-item {{ request()->routeIs('cms.page-contents.*') ? 'active' : '' }}" href="{{ route('cms.page-contents.index') }}">▤ Trang nội dung</a>
     <a class="nav-item {{ request()->routeIs('cms.page-sections.*') ? 'active' : '' }}" href="{{ route('cms.page-sections.index') }}">☷ Bố cục / Section</a>

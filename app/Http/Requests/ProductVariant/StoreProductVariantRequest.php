@@ -10,13 +10,14 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Schema(
  *     schema="StoreProductVariantRequest",
- *     required={"product_id","sku","option_ids"},
+ *     required={"product_id"},
  *     @OA\Property(property="product_id", type="integer", example=1),
  *     @OA\Property(property="sku", type="string", maxLength=100, example="AT-RED-M"),
  *     @OA\Property(property="price", type="number", format="decimal", minimum=0, nullable=true),
  *     @OA\Property(property="stock", type="integer", minimum=0, nullable=true),
  *     @OA\Property(property="is_active", type="boolean", nullable=true),
  *     @OA\Property(property="option_ids[]", type="array", @OA\Items(type="integer")),
+ *     @OA\Property(property="generate_all_combinations", type="boolean", description="Tạo toàn bộ tổ hợp từ các option đang hoạt động"),
  *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
  * )
  */
@@ -29,14 +30,17 @@ class StoreProductVariantRequest extends FormRequest
 
     public function rules(): array
     {
+        $generateAll = $this->boolean('generate_all_combinations');
+
         return [
             'product_id' => 'required|exists:products,id',
-            'sku' => 'required|string|max:100|unique:product_variants,sku',
+            'sku' => [$generateAll ? 'nullable' : 'required', 'string', 'max:100', 'unique:product_variants,sku'],
             'price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
-            'option_ids' => 'required|array',
+            'option_ids' => [$generateAll ? 'nullable' : 'required', 'array'],
             'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
+            'generate_all_combinations' => 'nullable|boolean',
             'images' => 'sometimes|array|max:10',
             'images.*' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120',
         ];

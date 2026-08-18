@@ -1,13 +1,18 @@
 <div class="heading">
     <div><h1>{{ $config['title'] }}</h1><p>{{ $config['description'] }}</p></div>
-    <a class="btn primary" href="{{ route("cms.$module.create") }}">＋ Thêm mới</a>
+    <div class="heading-actions">
+        @if(!empty($backUrl))
+            <a class="btn" href="{{ $backUrl }}">← {{ $backLabel ?? 'Quay lại' }}</a>
+        @endif
+        <a class="btn primary" href="{{ $createUrl ?? route("cms.$module.create") }}">＋ Thêm mới</a>
+    </div>
 </div>
-<div class="card module-table" data-endpoint="{{ $config['api'] }}" data-edit-url="{{ url("/cms/$module") }}">
+<div class="card module-table" data-endpoint="{{ $config['api'] }}" data-edit-url="{{ url("/cms/$module") }}" data-fixed-params='@json($fixedParams ?? [])'>
     <div class="toolbar">
         <div class="table-filter-group">
             <input class="input search" placeholder="Tìm kiếm..." data-search>
             @foreach($config['filters'] ?? [] as $filter)
-                <div class="table-filter-wrap" data-filter-wrap>
+                <div class="table-filter-wrap @if($filter['multiple'] ?? false) multiple-filter-wrap @endif" data-filter-wrap>
                     <div class="table-filter-control @if($filter['multiple'] ?? false) checkbox-filter-control @endif">
                         @if($filter['multiple'] ?? false)
                             <button type="button" class="checkbox-filter-toggle" data-filter-toggle>
@@ -21,9 +26,11 @@
                         @endif
                         <select class="table-filter @if($filter['multiple'] ?? false) native-filter-source @endif"
                                 data-filter-name="{{ $filter['name'] }}"
-                                data-source="{{ $filter['source'] }}"
+                                data-filter-query-name="{{ $filter['query_name'] ?? '' }}"
+                                data-source="{{ $filter['source'] ?? '' }}"
                                 data-value="{{ $filter['value'] }}"
                                 data-text="{{ $filter['text'] }}"
+                                @if(isset($filter['items'])) data-inline-items='@json($filter['items'])' @endif
                                 @if($filter['multiple'] ?? false)
                                     data-filter-multiple="1"
                                     data-filter-label="{{ $filter['label'] }}"

@@ -2,10 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'CMS cửa hàng')</title>
     <link rel="stylesheet" href="{{ asset('cms-assets/cms.css') }}">
 </head>
-<body data-api="{{ url('/admin/api') }}" data-storage="{{ url('/storage') }}" data-login="{{ route('cms.login') }}" data-access-token="{{ session('cms_access_token') }}" data-access-token-expires-at="{{ session('cms_access_token_expires_at') }}">
+<body data-api="{{ url('/admin/api') }}" data-storage="{{ url('/storage') }}" data-login="{{ route('cms.login') }}" data-refresh-url="{{ route('cms.refresh-token') }}" data-access-token="{{ session('cms_access_token') }}" data-access-token-expires-at="{{ session('cms_access_token_expires_at') }}">
 <div class="shell">
     @include('cms.partials.sidebar')
     <main class="main">

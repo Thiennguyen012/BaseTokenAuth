@@ -11,8 +11,10 @@ class PageConfig extends Model
 
     protected $fillable = [
         'company_name',
+        'slogan',
         'addresses',
         'hotline',
+        'email',
         'working_hour',
         'socials',
         'favicon_path',

@@ -32,6 +32,8 @@ class ProductController extends Controller
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="sort", in="query", description="latest, price_asc, price_desc, name_asc hoặc name_desc", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="is_featured", in="query", description="Lọc theo trạng thái nổi bật", @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="category_ids[]", in="query", description="Lọc theo nhiều danh mục (AND); sản phẩm phải thuộc tất cả danh mục đã chọn", @OA\Schema(type="array", @OA\Items(type="integer"))),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Thành công"),
@@ -44,8 +46,10 @@ class ProductController extends Controller
         $perPage = $perPage > 0 ? min($perPage, Helpers::LIMIT_PER_PAGE) : Helpers::LIMIT_PER_PAGE;
         $search = $request->query('search', '');
         $categoryIds = array_values(array_unique(array_filter(array_map('intval', (array) $request->query('category_ids', [])))));
+        $sort = $this->normalizeSort((string) $request->query('sort', 'latest'));
+        $isFeatured = $request->has('is_featured') ? $request->boolean('is_featured') : null;
 
-        $products = $this->productService->paginate($perPage, $search, $categoryIds);
+        $products = $this->productService->paginate($perPage, $search, $categoryIds, $sort, $isFeatured);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,
@@ -58,6 +62,13 @@ class ProductController extends Controller
                 'total' => $products->total(),
             ],
         ]);
+    }
+
+    private function normalizeSort(string $sort): string
+    {
+        return in_array($sort, ['latest', 'price_asc', 'price_desc', 'name_asc', 'name_desc'], true)
+            ? $sort
+            : 'latest';
     }
 
     /**

@@ -11,12 +11,14 @@ use OpenApi\Annotations as OA;
  *     schema="ProductResource",
  *     @OA\Property(property="id", type="integer"),
  *     @OA\Property(property="product_name", type="string"),
+ *     @OA\Property(property="slug", type="string", nullable=true),
  *     @OA\Property(property="sku", type="string", nullable=true),
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="is_active", type="boolean"),
  *     @OA\Property(property="is_featured", type="boolean"),
  *     @OA\Property(property="categories", type="array", @OA\Items(ref="#/components/schemas/CategoryResource")),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
+ *     @OA\Property(property="first_image", nullable=true, ref="#/components/schemas/FileResource"),
  *     @OA\Property(property="variant_groups", type="array", @OA\Items(ref="#/components/schemas/ProductVariantGroupResource")),
  *     @OA\Property(property="variants", type="array", @OA\Items(ref="#/components/schemas/ProductVariantResource")),
  *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
@@ -35,6 +37,7 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'product_name' => $this->product_name,
+            'slug' => $this->slug,
             'sku' => $this->sku,
             'description' => $this->description,
             'is_active' => $this->is_active,
@@ -45,6 +48,11 @@ class ProductResource extends JsonResource
                 'files',
                 fn () => FileResource::collection($this->files->where('type', 'image')->values())
             ),
+            'first_image' => $this->whenLoaded('files', function () {
+                $image = $this->files->firstWhere('type', 'image');
+
+                return $image ? new FileResource($image) : null;
+            }),
             'variant_groups' => $this->whenLoaded(
                 'variantGroupConfigurations',
                 fn () => ProductVariantGroupResource::collection($this->variantGroupConfigurations)

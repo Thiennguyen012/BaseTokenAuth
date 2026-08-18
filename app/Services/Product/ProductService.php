@@ -5,6 +5,7 @@ namespace App\Services\Product;
 use App\Repositories\Product\ProductInterface;
 use App\Services\File\FileService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ProductService
@@ -16,10 +17,9 @@ class ProductService
         $this->productRepository = $productRepository;
     }
 
-    public function paginate($limit = 10, $search = '', array $categoryIds = [])
+    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null)
     {
         $where = [];
-        $orderBy = ['created_at' => 'desc'];
 
         if ($search) {
             $where['orWhere'] = [
@@ -29,13 +29,21 @@ class ProductService
             ];
         }
 
+        if ($search && !isset($where['orWhere']['slug'])) {
+            $where['orWhere']['slug'] = ['slug', 'like', '%' . $search . '%'];
+        }
+
         if ($categoryIds !== []) {
             foreach ($categoryIds as $categoryId) {
                 $where['whereHas'][] = ['categories', ['categories.id' => (int) $categoryId]];
             }
         }
 
-        return $this->productRepository->paginate($where, $orderBy, ['*'], ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit);
+        if ($isFeatured !== null) {
+            $where['is_featured'] = $isFeatured;
+        }
+
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit, $sort);
     }
 
     public function getAll($search = '')
@@ -48,6 +56,10 @@ class ProductService
                 'product_name' => ['product_name', 'like', '%' . $search . '%'],
                 'sku' => ['sku', 'like', '%' . $search . '%'],
             ];
+        }
+
+        if ($search) {
+            $where['orWhere']['slug'] = ['slug', 'like', '%' . $search . '%'];
         }
 
         return $this->productRepository->get($where, $orderBy, ['*']);
@@ -67,6 +79,7 @@ class ProductService
             $categoryIds = $data['category_ids'] ?? [];
             $images = $data['images'] ?? [];
             unset($data['variant_groups'], $data['category_ids'], $data['images']);
+            $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['product_name']);
             $product = $this->productRepository->create($data);
             $this->syncCategories($product, $categoryIds);
             $this->syncVariantGroups($product, $groups);
@@ -85,6 +98,12 @@ class ProductService
             $categoryIds = $data['category_ids'] ?? [];
             $images = $data['images'] ?? [];
             unset($data['variant_groups'], $data['category_ids'], $data['images']);
+            if (array_key_exists('slug', $data)) {
+                $data['slug'] = $this->uniqueSlug(
+                    $data['slug'] ?: ($data['product_name'] ?? $product->product_name),
+                    (int) $product->id
+                );
+            }
             $product = $this->productRepository->edit($product, $data);
             if ($hasCategories) $this->syncCategories($product, $categoryIds);
             if ($hasGroups) {
@@ -104,13 +123,13 @@ class ProductService
         });
     }
 
-    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [])
+    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null)
     {
         $where = ['is_active' => true];
-        $orderBy = ['created_at' => 'desc'];
         if ($search) {
             $where['orWhere'] = [
                 'product_name' => ['product_name', 'like', '%' . $search . '%'],
+                'slug' => ['slug', 'like', '%' . $search . '%'],
                 'sku' => ['sku', 'like', '%' . $search . '%'],
                 'description' => ['description', 'like', '%' . $search . '%'],
             ];
@@ -118,13 +137,18 @@ class ProductService
         foreach ($categoryIds as $categoryId) {
             $where['whereHas'][] = ['categories', ['categories.id' => (int) $categoryId]];
         }
-        return $this->productRepository->paginate($where, $orderBy, ['*'], ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit);
+        if ($isFeatured !== null) {
+            $where['is_featured'] = $isFeatured;
+        }
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit, $sort);
     }
 
     public function findPublic($id)
     {
+        $identity = ctype_digit((string) $id) ? ['id' => (int) $id] : ['slug' => $id];
+
         return $this->productRepository->first(
-            ['id' => $id, 'is_active' => true], [], ['*'],
+            $identity + ['is_active' => true], [], ['*'],
             ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group']
         );
     }
@@ -211,5 +235,21 @@ class ProductService
             'directory' => 'products/' . $product->id,
             'type' => 'image',
         ]);
+    }
+
+    private function uniqueSlug(string $value, ?int $ignoreId = null): string
+    {
+        $base = Str::substr(Str::slug($value) ?: 'san-pham', 0, 240);
+        $slug = $base;
+        $suffix = 2;
+
+        while (DB::table('products')
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $slug = $base . '-' . $suffix++;
+        }
+
+        return $slug;
     }
 }
