@@ -15,6 +15,7 @@
     </main>
 </div>
 <div class="toast" data-toast></div>
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script src="{{ asset('cms-assets/cms.js') }}"></script>
 @stack('scripts')
 </body>

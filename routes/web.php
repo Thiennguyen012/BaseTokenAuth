@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Cms\CategoryController;
+use App\Http\Controllers\Cms\CustomerContactController;
 use App\Http\Controllers\Cms\AuthController;
 use App\Http\Controllers\Cms\DashboardController;
 use App\Http\Controllers\Cms\PageContentController;
@@ -24,11 +25,18 @@ Route::prefix('cms')->name('cms.')->group(function () {
         Route::get('products/{product}/variants', [ProductVariantController::class, 'forProduct'])->name('products.variants.index');
         Route::resource('products', ProductController::class)->only(['index', 'create', 'edit']);
         Route::resource('categories', CategoryController::class)->only(['index', 'create', 'edit']);
+        Route::resource('customer-contacts', CustomerContactController::class)->only(['index', 'create', 'edit']);
         Route::get('variant-groups', fn () => redirect()->route('cms.products.index'))->name('variant-groups.index');
         Route::get('variant-options', fn () => redirect()->route('cms.products.index'))->name('variant-options.index');
         Route::get('product-variants', fn () => redirect()->route('cms.products.index'))->name('product-variants.index');
         Route::resource('product-variants', ProductVariantController::class)->only(['create', 'edit']);
+        Route::get('page-contents/{page}/sections/create', [PageSectionController::class, 'createForPage'])->name('page-contents.sections.create');
+        Route::get('page-contents/{page}/sections/{section}/edit', [PageSectionController::class, 'editForPage'])->name('page-contents.sections.edit');
+        Route::get('page-contents/{page}/sections/{section}/items/create', [SectionItemController::class, 'createForSection'])->name('page-contents.sections.items.create');
+        Route::get('page-contents/{page}/sections/{section}/items/{item}/edit', [SectionItemController::class, 'editForSection'])->name('page-contents.sections.items.edit');
+        Route::get('page-contents/{page}/sections', [PageSectionController::class, 'redirectLegacy']);
         Route::resource('page-contents', PageContentController::class)->only(['index', 'create', 'edit']);
+        Route::get('page-contents/{page}', [PageSectionController::class, 'forPage'])->name('page-contents.sections.index');
         Route::get('page-configs', [PageConfigController::class, 'index'])->name('page-configs.index');
         Route::resource('page-sections', PageSectionController::class)->only(['index', 'create', 'edit']);
         Route::resource('section-items', SectionItemController::class)->only(['index', 'create', 'edit']);

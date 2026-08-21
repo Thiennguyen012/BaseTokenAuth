@@ -176,6 +176,210 @@
                 ]
             }
         },
+        "/api/customer-contacts": {
+            "post": {
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Gửi yêu cầu tư vấn",
+                "operationId": "b06c087e63120ca464afcea1a32f3a60",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCustomerContactRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tiếp nhận yêu cầu"
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ"
+                    },
+                    "429": {
+                        "description": "Gửi quá nhiều yêu cầu"
+                    }
+                }
+            }
+        },
+        "/admin/api/customer-contacts": {
+            "get": {
+                "tags": [
+                    "Customer Contacts"
+                ],
+                "summary": "Danh sách khách hàng liên hệ",
+                "operationId": "8dde82ff8c1a2d64a276842613a1efc7",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "401": {
+                        "description": "Chưa xác thực"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Customer Contacts"
+                ],
+                "summary": "Tạo khách hàng liên hệ",
+                "operationId": "45380ada9799f8f32be0701607c31ee3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCustomerContactRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã tạo"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/admin/api/customer-contacts/{id}": {
+            "get": {
+                "tags": [
+                    "Customer Contacts"
+                ],
+                "summary": "Chi tiết khách hàng liên hệ",
+                "operationId": "a221ad652c47351e034222f266098c37",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thành công"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Customer Contacts"
+                ],
+                "summary": "Xóa khách hàng liên hệ",
+                "operationId": "c25f987b1836080b12d584122b14d6af",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đã xóa"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Customer Contacts"
+                ],
+                "summary": "Cập nhật khách hàng liên hệ",
+                "operationId": "4cdbcbb094d7fb82bd0e93b08b54feb4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCustomerContactRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đã cập nhật"
+                    },
+                    "404": {
+                        "description": "Không tồn tại"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/admin/api/files/{id}": {
             "get": {
                 "tags": [
@@ -2426,6 +2630,40 @@
     },
     "components": {
         "schemas": {
+            "StoreCustomerContactRequest": {
+                "required": [
+                    "full_name",
+                    "phone",
+                    "consultation_content"
+                ],
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "example": "Nguyễn Văn A",
+                        "maxLength": 255
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "0901234567",
+                        "maxLength": 30
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true,
+                        "maxLength": 255
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "consultation_content": {
+                        "type": "string",
+                        "maxLength": 5000
+                    }
+                },
+                "type": "object"
+            },
             "UpdatePageConfigRequest": {
                 "properties": {
                     "company_name": {
@@ -3053,6 +3291,52 @@
                 },
                 "type": "object"
             },
+            "CustomerContactResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "full_name": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "nullable": true
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "category_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "category": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/CategoryResource"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "consultation_content": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "FileResource": {
                 "properties": {
                     "id": {
@@ -3616,6 +3900,14 @@
             "name": "Product Variants"
         },
         {
+            "name": "Public",
+            "description": "Public"
+        },
+        {
+            "name": "Customer Contacts",
+            "description": "Customer Contacts"
+        },
+        {
             "name": "Files",
             "description": "Files"
         },
@@ -3630,10 +3922,6 @@
         {
             "name": "Page Sections",
             "description": "Page Sections"
-        },
-        {
-            "name": "Public",
-            "description": "Public"
         },
         {
             "name": "Section Items",

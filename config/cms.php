@@ -10,7 +10,7 @@ return [
                 ['name' => 'product_name', 'label' => 'Tên sản phẩm', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên sản phẩm'],
                 ['name' => 'slug', 'label' => 'Slug sản phẩm', 'type' => 'text', 'placeholder' => 'Nhập slug sản phẩm'],
                 ['name' => 'sku', 'label' => 'SKU', 'type' => 'text', 'placeholder' => 'Nhập mã SKU'],
-                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea', 'placeholder' => 'Nhập mô tả chi tiết về sản phẩm...'],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'richtext', 'placeholder' => 'Nhập mô tả chi tiết về sản phẩm...'],
                 ['name' => 'category_ids', 'label' => 'Danh mục sản phẩm', 'type' => 'multi_select_api', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name', 'placeholder' => '-- Chọn danh mục để thêm --'],
                 ['name' => 'is_active', 'label' => 'Đang hoạt động', 'type' => 'checkbox'],
                 ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
@@ -23,7 +23,30 @@ return [
             'columns' => ['category_name' => 'Tên danh mục', 'description' => 'Mô tả'],
             'fields' => [
                 ['name' => 'category_name', 'label' => 'Tên danh mục', 'type' => 'text', 'required' => true],
-                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea'],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'richtext'],
+            ],
+        ],
+        'customer-contacts' => [
+            'title' => 'Khách hàng liên hệ',
+            'description' => 'Quản lý các yêu cầu tư vấn được khách hàng gửi từ website.',
+            'api' => 'customer-contacts',
+            'filters' => [
+                ['name' => 'category_id', 'label' => 'Tất cả danh mục', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name'],
+            ],
+            'columns' => [
+                'full_name' => 'Họ và tên',
+                'phone' => 'Số điện thoại',
+                'email' => 'Email',
+                'category_name' => 'Sản phẩm quan tâm',
+                'consultation_content' => 'Nội dung cần tư vấn',
+                'created_at' => 'Ngày gửi',
+            ],
+            'fields' => [
+                ['name' => 'full_name', 'label' => 'Họ và tên', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập họ và tên'],
+                ['name' => 'phone', 'label' => 'Số điện thoại', 'type' => 'tel', 'required' => true, 'placeholder' => 'Nhập số điện thoại'],
+                ['name' => 'email', 'label' => 'Email', 'type' => 'email', 'placeholder' => 'Nhập email'],
+                ['name' => 'category_id', 'label' => 'Sản phẩm quan tâm', 'type' => 'select_api', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name'],
+                ['name' => 'consultation_content', 'label' => 'Nội dung cần tư vấn', 'type' => 'textarea', 'required' => true, 'placeholder' => 'Nhập nội dung cần tư vấn'],
             ],
         ],
         'variant-groups' => [
@@ -66,7 +89,7 @@ return [
             'fields' => [
                 ['name' => 'company_name', 'label' => 'Tên công ty', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên công ty'],
                 ['name' => 'slogan', 'label' => 'Slogan', 'type' => 'text', 'placeholder' => 'Nhập slogan'],
-                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea', 'placeholder' => 'Nhập mô tả chung'],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'richtext', 'placeholder' => 'Nhập mô tả chung'],
                 ['name' => 'hotline', 'label' => 'Hotline', 'type' => 'text', 'placeholder' => 'Nhập số hotline'],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'email', 'placeholder' => 'Nhập email liên hệ'],
                 ['name' => 'working_hour', 'label' => 'Giờ làm việc', 'type' => 'text', 'placeholder' => 'Nhập giờ làm việc'],
@@ -91,7 +114,7 @@ return [
             'fields' => [
                 ['name' => 'page_content_id', 'label' => 'ID trang', 'type' => 'number', 'required' => true],
                 ['name' => 'title', 'label' => 'Tiêu đề', 'type' => 'text'], ['name' => 'subtitle', 'label' => 'Phụ đề', 'type' => 'text'],
-                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'textarea'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
+                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'richtext'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
                 ['name' => 'files', 'label' => 'Ảnh / video', 'type' => 'files'], ['name' => 'video_urls', 'label' => 'URL video (mỗi dòng một URL)', 'type' => 'lines'],
             ],
         ],
@@ -101,7 +124,7 @@ return [
             'fields' => [
                 ['name' => 'page_section_id', 'label' => 'ID section', 'type' => 'number', 'required' => true],
                 ['name' => 'title', 'label' => 'Tiêu đề', 'type' => 'text'], ['name' => 'subtitle', 'label' => 'Phụ đề', 'type' => 'text'],
-                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'textarea'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
+                ['name' => 'content', 'label' => 'Nội dung', 'type' => 'richtext'], ['name' => 'sort_order', 'label' => 'Thứ tự', 'type' => 'number'],
                 ['name' => 'files', 'label' => 'Ảnh / video', 'type' => 'files'], ['name' => 'video_urls', 'label' => 'URL video (mỗi dòng một URL)', 'type' => 'lines'],
             ],
         ],

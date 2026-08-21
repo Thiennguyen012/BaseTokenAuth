@@ -1,11 +1,19 @@
 @foreach($config['fields'] as $field)
 @php($type = $field['type'])
-<div class="field {{ in_array($type, ['textarea','json','key_value','repeatable_values','files','single_file','lines','multi_select_api','searchable_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}" data-field-name="{{ $field['name'] }}">
+@if(($hidePageRelation ?? false) && $field['name'] === 'page_content_id')
+    <input type="hidden" name="page_content_id" value="{{ $presetPageContentId ?? '' }}">
+    @continue
+@endif
+@if(($hideSectionRelation ?? false) && $field['name'] === 'page_section_id')
+    <input type="hidden" name="page_section_id" value="{{ $presetPageSectionId ?? '' }}">
+    @continue
+@endif
+<div class="field {{ in_array($type, ['textarea','richtext','json','key_value','repeatable_values','files','single_file','lines','multi_select_api','searchable_select_api','product_variant_groups','variant_options']) ? 'full' : '' }}" data-field-name="{{ $field['name'] }}">
     @if($type === 'checkbox')
         <label class="check"><input type="checkbox" name="{{ $field['name'] }}" value="1" @checked($field['default'] ?? false)> {{ $field['label'] }}</label>
     @else
         <label for="{{ $field['name'] }}">{{ $field['label'] }}</label>
-        @if(in_array($type, ['textarea','json','lines']))
+        @if(in_array($type, ['textarea','richtext','json','lines']))
             <textarea class="input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" data-type="{{ $type }}" placeholder="{{ $field['placeholder'] ?? '' }}" {{ ($field['required'] ?? false) ? 'required' : '' }}></textarea>
         @elseif($type === 'select_api')
             <select class="input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" data-type="select_api" data-source="{{ $field['source'] }}" data-value="{{ $field['value'] }}" data-text="{{ $field['text'] }}" @if($field['lock_on_edit'] ?? false) data-lock-on-edit="1" @endif {{ ($field['required'] ?? false) ? 'required' : '' }}>

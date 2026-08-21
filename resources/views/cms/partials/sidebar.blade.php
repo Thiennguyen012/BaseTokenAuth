@@ -4,6 +4,8 @@
     <div class="nav-label">Quản lý sản phẩm</div>
     <a class="nav-item {{ request()->routeIs('cms.products.*') ? 'active' : '' }}" href="{{ route('cms.products.index') }}">▣ Sản phẩm</a>
     <a class="nav-item {{ request()->routeIs('cms.categories.*') ? 'active' : '' }}" href="{{ route('cms.categories.index') }}">◇ Danh mục sản phẩm</a>
+    <div class="nav-label">Khách hàng</div>
+    <a class="nav-item {{ request()->routeIs('cms.customer-contacts.*') ? 'active' : '' }}" href="{{ route('cms.customer-contacts.index') }}">✉ Khách hàng liên hệ</a>
     <div class="nav-label">Nội dung & bố cục</div>
     <a class="nav-item {{ request()->routeIs('cms.page-contents.*') ? 'active' : '' }}" href="{{ route('cms.page-contents.index') }}">▤ Trang nội dung</a>
     <a class="nav-item {{ request()->routeIs('cms.page-sections.*') ? 'active' : '' }}" href="{{ route('cms.page-sections.index') }}">☷ Bố cục / Section</a>

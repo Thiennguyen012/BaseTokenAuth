@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Category\CategoryController;
+use App\Http\Controllers\Api\CustomerContact\CustomerContactController;
 use App\Http\Controllers\Api\Product\ProductController;
 use App\Http\Controllers\Api\ProductVariant\ProductVariantController;
 use App\Http\Controllers\Api\VariantGroup\VariantGroupController;
@@ -22,6 +23,7 @@ Route::prefix('api')->group(function () {
     Route::get('/page-contents', [LandingController::class, 'pages']);
     Route::get('/page-contents/{id}', [LandingController::class, 'page']);
     Route::get('/page-configs', [LandingController::class, 'config']);
+    Route::post('/customer-contacts', [CustomerContactController::class, 'publicStore'])->middleware('throttle:10,1');
 });
 
 Route::prefix('admin/api')->group(function () {
@@ -41,6 +43,15 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('customer-contacts')->group(function () {
+        Route::get('/', [CustomerContactController::class, 'index']);
+        Route::post('/', [CustomerContactController::class, 'store']);
+        Route::get('/{id}', [CustomerContactController::class, 'show']);
+        Route::put('/{id}', [CustomerContactController::class, 'update']);
+        Route::patch('/{id}', [CustomerContactController::class, 'update']);
+        Route::delete('/{id}', [CustomerContactController::class, 'destroy']);
+    });
+
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index']);
         Route::post('/', [CategoryController::class, 'store']);

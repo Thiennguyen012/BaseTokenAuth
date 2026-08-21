@@ -7,6 +7,31 @@ window.CMS = (() => {
     let refreshPromise = null;
     let refreshTimer = null;
 
+    async function createRichEditor(textarea) {
+        if (!textarea || !window.ClassicEditor) return null;
+        try {
+            const editor = await window.ClassicEditor.create(textarea, {
+                toolbar: {
+                    items: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'link', '|', 'bulletedList', 'numberedList', 'blockQuote'],
+                    shouldNotGroupWhenFull: false,
+                },
+                link: {addTargetToExternalLinks: true},
+                placeholder: textarea.placeholder || 'Nhập nội dung',
+            });
+            textarea._richEditor = editor;
+            return editor;
+        } catch (error) {
+            console.error('Không thể khởi tạo CKEditor:', error);
+            return null;
+        }
+    }
+
+    async function setupRichEditors(container) {
+        const textareas = [...container.querySelectorAll('textarea[data-type="richtext"]')];
+        await Promise.all(textareas.map(textarea => createRichEditor(textarea)));
+        return textareas;
+    }
+
     function expireSession() {
         if (loggingOut) return;
         loggingOut = true;
@@ -139,7 +164,7 @@ window.CMS = (() => {
         if (key === 'price' && value !== null && value !== undefined && value !== '') {
             return `${new Intl.NumberFormat('vi-VN').format(Number(value))} ₫`;
         }
-        if (key === 'category_names') {
+        if (key === 'category_names' || key === 'consultation_content') {
             const full = String(value || '—');
             const short = full.length > 45 ? `${full.slice(0, 45).trim()}...` : full;
             return `<span class="table-ellipsis" title="${esc(full)}">${esc(short)}</span>`;
@@ -1174,6 +1199,301 @@ window.CMS = (() => {
         }
     }
 
+    function pageContentCards() {
+        const root = document.querySelector('[data-content-pages]');
+        if (!root) return;
+        const endpoint = root.dataset.endpoint;
+        const editUrl = root.dataset.editUrl;
+        const sectionsUrl = root.dataset.sectionsUrl;
+        const grid = root.querySelector('[data-page-grid]');
+        const count = root.querySelector('[data-page-count]');
+        const searchInput = root.querySelector('[data-page-search]');
+        let timer;
+        const documentIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 12h6M9 16h6"/></svg>';
+        const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
+        const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+
+        async function load(search = '') {
+            grid.innerHTML = '<div class="content-pages-state loading-state">Đang tải dữ liệu...</div>';
+            try {
+                const params = new URLSearchParams({per_page: '50', search});
+                const result = await request(`/${endpoint}?${params.toString()}`);
+                const rows = result.data || [];
+                count.textContent = `${result.meta?.total ?? rows.length} trang`;
+                grid.innerHTML = rows.length ? rows.map(row => {
+                    const slug = String(row.slug || '').replace(/^\/+/, '');
+                    const sectionCount = Array.isArray(row.sections) ? row.sections.length : 0;
+                    return `<article class="content-page-card" data-page-href="${sectionsUrl}/${encodeURIComponent(slug)}" tabindex="0" role="link" aria-label="Mở các section của ${esc(row.title)}">
+                        <div class="content-page-card-top"><span class="content-page-icon">${documentIcon}</span><span class="content-page-tools">
+                            <a class="content-page-tool" href="${editUrl}/${encodeURIComponent(slug)}/edit" title="Sửa trang" aria-label="Sửa trang">${editIcon}</a>
+                            <button type="button" class="content-page-tool danger delete-page" data-id="${row.id}" title="Xóa trang" aria-label="Xóa trang">${deleteIcon}</button>
+                        </span></div>
+                        <h2>${esc(row.title)}</h2><p class="content-page-slug">/${esc(slug)}</p><span class="content-page-key">${esc(slug || 'trang')}</span>
+                        <div class="content-page-card-bottom"><span>${sectionCount} section</span><b aria-hidden="true">→</b></div>
+                    </article>`;
+                }).join('') : '<div class="content-pages-state">Chưa có trang nội dung phù hợp.</div>';
+
+                grid.querySelectorAll('[data-page-href]').forEach(card => {
+                    const open = event => {
+                        if (event.target.closest('a,button')) return;
+                        if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+                        if (event.type === 'keydown') event.preventDefault();
+                        location.href = card.dataset.pageHref;
+                    };
+                    card.addEventListener('click', open);
+                    card.addEventListener('keydown', open);
+                });
+                grid.querySelectorAll('.delete-page').forEach(button => button.onclick = async () => {
+                    if (!confirm('Bạn chắc chắn muốn xóa trang và toàn bộ nội dung liên quan?')) return;
+                    try {
+                        const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'});
+                        toast(result.message || 'Đã xóa trang');
+                        await load(searchInput.value.trim());
+                    } catch (error) { toast(error.message, true); }
+                });
+            } catch (error) {
+                count.textContent = '0 trang';
+                grid.innerHTML = `<div class="content-pages-state">${esc(error.message)}</div>`;
+            }
+        }
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => load(searchInput.value.trim()), 300);
+        });
+        load();
+    }
+
+    function sectionManager() {
+        const root = document.querySelector('[data-section-manager]');
+        if (!root) return;
+        const endpoint = root.dataset.endpoint;
+        const pageId = root.dataset.pageId;
+        const pageUrl = root.dataset.pageUrl;
+        const list = root.querySelector('[data-section-list]');
+        const count = root.querySelector('[data-section-count]');
+        const searchInput = root.querySelector('[data-section-search]');
+        const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
+        let timer;
+        let currentSections = [];
+
+        const editIcon = '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
+        const deleteIcon = '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        const textOnly = value => {
+            const element = document.createElement('div');
+            element.innerHTML = String(value || '');
+            return element.textContent || '';
+        };
+        const fileUrl = file => file.external_url || (file.path ? `${storage}/${String(file.path).replace(/^\//, '')}` : '');
+        async function openSectionModal(section, settings = {}) {
+            const itemMode = !!settings.item;
+            const creating = !!settings.create;
+            const resourceEndpoint = itemMode ? 'section-items' : endpoint;
+            const overlay = modalShell(`<form class="cms-section-form">
+                <div class="cms-modal-title"><h3>${creating ? 'Thêm' : 'Chỉnh sửa'} ${itemMode ? 'item' : 'section'}</h3><button type="button" class="modal-close" data-cancel aria-label="Đóng">×</button></div>
+                <div class="cms-modal-body section-modal-body">
+                    <div class="section-modal-grid">
+                        <div class="field"><label>Tiêu đề</label><input class="input" name="title" value="${esc(section.title || '')}" placeholder="Nhập tiêu đề"></div>
+                        <div class="field"><label>Tiêu đề phụ</label><input class="input" name="subtitle" value="${esc(section.subtitle || '')}" placeholder="Nhập tiêu đề phụ"></div>
+                        <div class="field full"><label>Nội dung</label><textarea class="input" data-type="richtext" name="content" placeholder="Nhập nội dung section">${esc(section.content || '')}</textarea></div>
+                        <div class="field"><label>Thứ tự</label><input class="input" type="number" name="sort_order" value="${Number(section.sort_order || 0)}" min="0"></div>
+                    </div>
+                    <div class="section-modal-media">
+                        <div class="section-modal-media-head"><div><strong>Media</strong><small>Ảnh JPG, PNG, GIF, WEBP; video sử dụng đường dẫn URL.</small></div><button type="button" class="btn primary" data-add-media>＋ Thêm media</button></div>
+                        <div class="section-modal-files sortable-media" data-modal-files></div>
+                    </div>
+                    <div class="form-error" data-modal-error></div>
+                </div>
+                <div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Đóng</button><button type="submit" class="btn primary">Lưu</button></div>
+            </form>`);
+            overlay.querySelector('.cms-modal').classList.add('section-edit-modal');
+            const form = overlay.querySelector('form');
+            const contentEditor = await createRichEditor(form.elements.content);
+            const filesBox = form.querySelector('[data-modal-files]');
+            const originalIds = new Set((section.files || []).map(file => String(file.id)));
+            let mediaRows = (section.files || []).map(file => ({
+                key: `stored-${file.id}`, id: file.id, originalKind: file.external_url ? 'video' : 'image',
+                kind: file.external_url ? 'video' : 'image', value: file.external_url || file.file_name || file.title || '',
+                preview: fileUrl(file), file: null, stored: file,
+            }));
+            let draggedKey = null;
+
+            const chooseImage = row => new Promise(resolve => {
+                const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+                input.onchange = () => {
+                    if (!input.files[0]) return resolve(false);
+                    if (input.files[0].size > 5 * 1024 * 1024) { toast('Hình ảnh không được vượt quá 5MB.', true); return resolve(false); }
+                    row.file = input.files[0]; row.value = row.file.name; row.preview = URL.createObjectURL(row.file); resolve(true);
+                };
+                input.click();
+            });
+            const renderRows = () => {
+                filesBox.innerHTML = mediaRows.length ? mediaRows.map(row => `<div class="section-modal-file media-sort-row" draggable="true" data-media-key="${esc(row.key)}">
+                    <button type="button" class="media-drag" title="Kéo để thay đổi thứ tự">⠿</button>
+                    <span class="media-row-preview">${row.kind === 'image' && row.preview ? `<img src="${esc(row.preview)}" alt="">` : '<b>VIDEO</b>'}</span>
+                    <select class="input media-kind"><option value="image" ${row.kind === 'image' ? 'selected' : ''}>Hình ảnh</option><option value="video" ${row.kind === 'video' ? 'selected' : ''}>Video</option></select>
+                    ${row.kind === 'image' ? `<button type="button" class="input media-value choose-row-image" title="Chọn hình ảnh">${esc(row.value || 'Chọn hình ảnh')}</button>` : `<input class="input media-value media-video-url" type="url" value="${esc(row.value || '')}" placeholder="Nhập URL video">`}
+                    <button type="button" class="section-modal-file-delete" title="Xóa media">${deleteIcon}</button>
+                </div>`).join('') : '<div class="section-modal-media-empty">Chưa có media.</div>';
+                filesBox.querySelectorAll('[data-media-key]').forEach(element => {
+                    const row = mediaRows.find(item => item.key === element.dataset.mediaKey);
+                    element.querySelector('.media-kind').onchange = async event => {
+                        const previous = row.kind; row.kind = event.target.value;
+                        if (row.kind === 'image' && !row.file && row.originalKind !== 'image') {
+                            if (!await chooseImage(row)) row.kind = previous;
+                        } else if (row.kind === 'video' && row.originalKind !== 'video') row.value = '';
+                        renderRows();
+                    };
+                    element.querySelector('.choose-row-image')?.addEventListener('click', async () => { await chooseImage(row); renderRows(); });
+                    element.querySelector('.media-video-url')?.addEventListener('input', event => { row.value = event.target.value; });
+                    element.querySelector('.section-modal-file-delete').onclick = async () => {
+                        if (row.id && !await confirmRemoveStoredFile(row.value || 'media này')) return;
+                        try {
+                            if (row.id) await request(`/files/${row.id}`, {method: 'DELETE'});
+                            mediaRows = mediaRows.filter(item => item.key !== row.key); renderRows();
+                            if (row.id) toast('Đã xóa media');
+                        } catch (error) { toast(error.message, true); }
+                    };
+                    element.ondragstart = event => { draggedKey = row.key; element.classList.add('dragging'); event.dataTransfer.effectAllowed = 'move'; };
+                    element.ondragend = () => {
+                        const byKey = new Map(mediaRows.map(item => [item.key, item]));
+                        mediaRows = [...filesBox.querySelectorAll('[data-media-key]')].map(item => byKey.get(item.dataset.mediaKey)).filter(Boolean);
+                        draggedKey = null; element.classList.remove('dragging');
+                    };
+                    element.ondragover = event => {
+                        event.preventDefault();
+                        const draggedElement = [...filesBox.querySelectorAll('[data-media-key]')].find(item => item.dataset.mediaKey === draggedKey);
+                        if (!draggedElement || draggedElement === element) return;
+                        const after = event.clientY > element.getBoundingClientRect().top + element.offsetHeight / 2;
+                        filesBox.insertBefore(draggedElement, after ? element.nextSibling : element);
+                    };
+                });
+            };
+            renderRows();
+            form.querySelector('[data-add-media]').onclick = () => {
+                mediaRows.push({key: `new-${Date.now()}-${Math.random()}`, kind: 'image', originalKind: null, value: '', preview: '', file: null});
+                renderRows();
+            };
+
+            const close = async () => {
+                if (contentEditor) await contentEditor.destroy();
+                overlay.remove();
+            };
+            overlay.querySelectorAll('[data-cancel]').forEach(button => button.onclick = close);
+            form.onsubmit = async event => {
+                event.preventDefault();
+                const errorBox = form.querySelector('[data-modal-error]'); errorBox.textContent = '';
+                try {
+                    const invalid = mediaRows.find(row => row.kind === 'video' && !row.value.trim() || row.kind === 'image' && !row.id && !row.file);
+                    if (invalid) throw new Error('Vui lòng nhập đầy đủ URL video hoặc chọn hình ảnh.');
+                    const data = new FormData();
+                    ['title', 'subtitle', 'sort_order'].forEach(name => data.append(name, form.elements[name].value));
+                    data.append('content', contentEditor ? contentEditor.getData() : form.elements.content.value);
+                    const newImages = mediaRows.filter(row => !row.id && row.kind === 'image');
+                    const newVideos = mediaRows.filter(row => !row.id && row.kind === 'video');
+                    newImages.forEach(row => data.append('files[]', row.file));
+                    newVideos.forEach(row => data.append('video_urls[]', row.value.trim()));
+                    if (itemMode && creating) data.append('page_section_id', settings.sectionId);
+                    if (!itemMode && creating) data.append('page_content_id', pageId);
+                    if (!creating) data.append('_method', 'PUT');
+                    const result = await request(`/${resourceEndpoint}${creating ? '' : '/' + section.id}`, {method: 'POST', body: data});
+
+                    for (const row of mediaRows.filter(row => row.id)) {
+                        if (row.kind === 'video') await request(`/files/${row.id}`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({external_url: row.value.trim(), type: 'video'})});
+                        else if (row.file) { const replacement = new FormData(); replacement.append('file', row.file); replacement.append('type', 'image'); await request(`/files/${row.id}/replace`, {method: 'POST', body: replacement}); }
+                    }
+                    const returned = result.data?.files || [];
+                    const added = returned.filter(file => !originalIds.has(String(file.id)));
+                    const addedImages = added.filter(file => !file.external_url);
+                    const addedVideos = added.filter(file => file.external_url);
+                    newImages.forEach((row, index) => { row.id = addedImages[index]?.id; });
+                    newVideos.forEach((row, index) => { row.id = addedVideos[index]?.id; });
+                    await Promise.all(mediaRows.filter(row => row.id).map((row, index) => request(`/files/${row.id}`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sort_order: index})})));
+                    await close(); toast(result.message || `Đã ${creating ? 'thêm' : 'cập nhật'} ${itemMode ? 'item' : 'section'}`); await load(searchInput.value.trim());
+                } catch (error) { errorBox.textContent = error.message; }
+            };
+        }
+        const renderMedia = files => (files || []).map(file => {
+            const url = fileUrl(file);
+            if (!url) return '';
+            const image = String(file.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.path || file.file_name || '');
+            return `<a class="section-media-card" href="${esc(url)}" target="_blank" rel="noopener">
+                ${image ? `<img src="${esc(url)}" alt="${esc(file.title || file.file_name || 'Media')}" loading="lazy">` : '<span class="section-media-file">FILE</span>'}
+                <span>↗ ${esc(file.type || (image ? 'image' : 'file'))}: ${esc(file.title || file.file_name || url)}</span>
+            </a>`;
+        }).join('');
+        const renderItem = item => `<article class="section-item-card" data-item-id="${item.id}">
+            <div class="section-item-top"><div><span class="visibility-badge">● Hiển thị</span><small>Thứ tự: ${Number(item.sort_order || 0)}</small></div><div class="section-row-tools">
+                <button class="section-icon-button edit-item" type="button" data-id="${item.id}" data-section-id="${item.page_section_id}" title="Sửa item">${editIcon}</button>
+                <button class="section-icon-button danger delete-item" type="button" data-id="${item.id}" title="Xóa item">${deleteIcon}</button>
+            </div></div>
+            <h3>${esc(item.title || 'Item chưa có tiêu đề')}</h3>
+            ${item.subtitle ? `<p class="section-item-subtitle">${esc(item.subtitle)}</p>` : ''}
+            ${item.content ? `<div class="section-item-content">${esc(textOnly(item.content))}</div>` : ''}
+            ${(item.files || []).length ? `<div class="section-media-grid item-media">${renderMedia(item.files)}</div>` : ''}
+        </article>`;
+        const renderSection = (section, index) => {
+            const items = section.items || [];
+            return `<article class="section-card" id="section-${section.id}" data-section-id="${section.id}">
+                <header class="section-card-header">
+                    <span class="section-number">${index + 1}</span>
+                    <div class="section-card-heading"><div><h2>${esc(section.title || 'Section chưa có tiêu đề')}</h2><span class="visibility-badge">● Hiển thị</span></div><small>Thứ tự: ${Number(section.sort_order || 0)}</small>${section.subtitle ? `<p>${esc(section.subtitle)}</p>` : ''}</div>
+                    <div class="section-card-actions"><span class="section-item-count">${items.length} item</span><button class="section-icon-button edit-section" type="button" data-id="${section.id}" title="Sửa section">${editIcon}</button><button class="section-icon-button danger delete-section" type="button" data-id="${section.id}" title="Xóa section">${deleteIcon}</button><button class="section-icon-button section-toggle" type="button" title="Thu gọn section"><span>⌃</span></button></div>
+                </header>
+                <div class="section-card-body"><div class="section-add-item"><button class="btn add-item" type="button" data-section-id="${section.id}">＋ Thêm item</button></div>
+                    ${(section.files || []).length ? `<div class="section-media-grid">${renderMedia(section.files)}</div>` : ''}
+                    <div class="section-items">${items.length ? items.map(renderItem).join('') : '<div class="section-items-empty">Section này chưa có item.</div>'}</div>
+                </div>
+            </article>`;
+        };
+
+        async function load(search = '') {
+            list.innerHTML = '<div class="section-manager-state loading-state">Đang tải dữ liệu...</div>';
+            try {
+                const params = new URLSearchParams({per_page: '50', page_content_id: pageId, search});
+                const result = await request(`/${endpoint}?${params.toString()}`);
+                const rows = result.data || [];
+                currentSections = rows;
+                count.textContent = `${result.meta?.total ?? rows.length} section`;
+                list.innerHTML = rows.length ? rows.map(renderSection).join('') : '<div class="section-manager-state card">Chưa có section phù hợp.</div>';
+                bindActions(rows);
+                if (location.hash) document.querySelector(location.hash)?.scrollIntoView({behavior: 'smooth', block: 'start'});
+            } catch (error) { list.innerHTML = `<div class="section-manager-state card">${esc(error.message)}</div>`; }
+        }
+
+        function bindActions(rows) {
+            const sections = new Map(rows.map(section => [String(section.id), section]));
+            const items = new Map(rows.flatMap(section => (section.items || []).map(item => [String(item.id), item])));
+            list.querySelectorAll('.edit-section').forEach(button => button.onclick = () => openSectionModal(sections.get(button.dataset.id)));
+            list.querySelectorAll('.add-item').forEach(button => button.onclick = () => {
+                const section = sections.get(button.dataset.sectionId);
+                openSectionModal({title: '', subtitle: '', content: '', sort_order: (section?.items?.length || 0) + 1, files: []}, {item: true, create: true, sectionId: button.dataset.sectionId});
+            });
+            list.querySelectorAll('.edit-item').forEach(button => button.onclick = () => openSectionModal(items.get(button.dataset.id), {item: true, sectionId: button.dataset.sectionId}));
+            list.querySelectorAll('.section-toggle').forEach(button => button.onclick = () => {
+                const card = button.closest('.section-card');
+                card.classList.toggle('collapsed');
+                button.querySelector('span').textContent = card.classList.contains('collapsed') ? '⌄' : '⌃';
+            });
+            list.querySelectorAll('.delete-section').forEach(button => button.onclick = async () => {
+                if (!confirm('Xóa section này sẽ xóa toàn bộ item bên trong. Bạn có chắc chắn?')) return;
+                try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa section'); load(searchInput.value.trim()); }
+                catch (error) { toast(error.message, true); }
+            });
+            list.querySelectorAll('.delete-item').forEach(button => button.onclick = async () => {
+                if (!confirm('Bạn chắc chắn muốn xóa item này?')) return;
+                try { const result = await request(`/section-items/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa item'); load(searchInput.value.trim()); }
+                catch (error) { toast(error.message, true); }
+            });
+        }
+
+        searchInput.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => load(searchInput.value.trim()), 300); });
+        root.querySelector('[data-add-section]').onclick = () => openSectionModal({
+            title: '', subtitle: '', content: '', sort_order: currentSections.length + 1, files: [],
+        }, {create: true});
+        load();
+    }
+
     async function formPage() {
         const form = document.querySelector('.module-form');
         const endpoint = form.dataset.endpoint;
@@ -1191,7 +1511,11 @@ window.CMS = (() => {
                 await fill(form, result.data || {});
                 form.querySelectorAll('[data-lock-on-edit]').forEach(input => input.disabled = true);
             } else {
-                const productId = new URLSearchParams(location.search).get('product_id');
+                const query = new URLSearchParams(location.search);
+                form.querySelectorAll('[name]').forEach(input => {
+                    if (query.has(input.name) && !input.value && !['file', 'checkbox', 'radio'].includes(input.type)) input.value = query.get(input.name);
+                });
+                const productId = query.get('product_id');
                 const productPicker = form.querySelector('[data-type="searchable_select_api"]');
                 if (productId && productPicker) {
                     const result = await request(`/products/${productId}`);
@@ -1201,11 +1525,15 @@ window.CMS = (() => {
                     await loadProductContext(form, productId);
                 }
             }
+            await setupRichEditors(form);
         } catch (error) { toast(error.message, true); }
         form.onsubmit = async event => {
             event.preventDefault();
             try {
                 const formData = new FormData(form);
+                form.querySelectorAll('textarea[data-type="richtext"]').forEach(input => {
+                    formData.set(input.name, input._richEditor ? input._richEditor.getData() : input.value);
+                });
                 form.querySelectorAll('.field > .check input[type="checkbox"]').forEach(input => formData.set(input.name, input.checked ? '1' : '0'));
                 form.querySelectorAll('[data-type="json"]').forEach(input => { formData.delete(input.name); if (input.value.trim()) appendJson(formData, input.name, JSON.parse(input.value)); });
                 form.querySelectorAll('[data-type="lines"]').forEach(input => { formData.delete(input.name); input.value.split('\n').map(v => v.trim()).filter(Boolean).forEach(v => formData.append(`${input.name}[]`, v)); });
@@ -1228,5 +1556,5 @@ window.CMS = (() => {
     }
 
     document.addEventListener('DOMContentLoaded', common);
-    return {request, indexPage, formPage, dashboard};
+    return {request, indexPage, pageContentCards, sectionManager, formPage, dashboard};
 })();

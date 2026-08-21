@@ -66,6 +66,18 @@ class CmsBladeStructureTest extends TestCase
             ->assertOk()
             ->assertSee('Quản lý sản phẩm');
 
+        $this->actingAs($user)
+            ->withSession(['cms_access_token' => 'test-token'])
+            ->get('/cms/customer-contacts')
+            ->assertOk()
+            ->assertSee('Khách hàng liên hệ');
+
+        $this->actingAs($user)
+            ->withSession(['cms_access_token' => 'test-token'])
+            ->get('/cms/customer-contacts/create')
+            ->assertOk()
+            ->assertSee('Nội dung cần tư vấn');
+
         $this->actingAs($user)->get('/cms/page-sections/create')->assertOk()->assertSee('Thêm bố cục');
         $this->actingAs($user)->get('/cms/section-items/1/edit')->assertOk()->assertSee('Chỉnh sửa nội dung section', false);
     }
