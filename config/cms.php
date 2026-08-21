@@ -62,10 +62,11 @@ return [
         ],
         'page-configs' => [
             'title' => 'Cấu hình trang', 'description' => 'Quản lý thông tin chung của công ty và website.', 'api' => 'page-configs',
-            'columns' => ['company_name' => 'Tên công ty', 'slogan' => 'Slogan', 'hotline' => 'Hotline', 'email' => 'Email', 'working_hour' => 'Giờ làm việc', 'addresses' => 'Địa chỉ'],
+            'columns' => ['company_name' => 'Tên công ty', 'slogan' => 'Slogan', 'description' => 'Mô tả', 'hotline' => 'Hotline', 'email' => 'Email', 'working_hour' => 'Giờ làm việc', 'addresses' => 'Địa chỉ'],
             'fields' => [
                 ['name' => 'company_name', 'label' => 'Tên công ty', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên công ty'],
                 ['name' => 'slogan', 'label' => 'Slogan', 'type' => 'text', 'placeholder' => 'Nhập slogan'],
+                ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea', 'placeholder' => 'Nhập mô tả chung'],
                 ['name' => 'hotline', 'label' => 'Hotline', 'type' => 'text', 'placeholder' => 'Nhập số hotline'],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'email', 'placeholder' => 'Nhập email liên hệ'],
                 ['name' => 'working_hour', 'label' => 'Giờ làm việc', 'type' => 'text', 'placeholder' => 'Nhập giờ làm việc'],

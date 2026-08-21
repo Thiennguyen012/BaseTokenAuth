@@ -31,6 +31,7 @@ class PageConfigTest extends TestCase
         $config = PageConfig::query()->create([
             'company_name' => 'Công ty Nhựa',
             'slogan' => 'Chất lượng tạo niềm tin',
+            'description' => 'Thông tin giới thiệu chung về công ty.',
             'addresses' => ['Kho 1', 'Kho 2'],
             'hotline' => '0915799080',
             'email' => 'contact@example.com',
@@ -42,6 +43,7 @@ class PageConfigTest extends TestCase
 
         $this->assertSame(['Kho 1', 'Kho 2'], $config->addresses);
         $this->assertSame('Chất lượng tạo niềm tin', $config->slogan);
+        $this->assertSame('Thông tin giới thiệu chung về công ty.', $config->description);
         $this->assertSame('0915799080', $config->hotline);
         $this->assertSame('contact@example.com', $config->email);
         $this->assertSame('https://www.tiktok.com/@company', $config->socials['tiktok']);
@@ -54,6 +56,7 @@ class PageConfigTest extends TestCase
         $valid = Validator::make([
             'company_name' => 'Công ty Nhựa',
             'slogan' => 'Chất lượng tạo niềm tin',
+            'description' => 'Thông tin giới thiệu chung về công ty.',
             'addresses' => ['Địa chỉ hợp lệ'],
             'hotline' => '0915799080',
             'email' => 'contact@example.com',

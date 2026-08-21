@@ -2437,6 +2437,10 @@
                         "nullable": true,
                         "maxLength": 255
                     },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "addresses": {
                         "type": "array",
                         "items": {
@@ -3106,6 +3110,10 @@
                         "type": "string"
                     },
                     "slogan": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description": {
                         "type": "string",
                         "nullable": true
                     },

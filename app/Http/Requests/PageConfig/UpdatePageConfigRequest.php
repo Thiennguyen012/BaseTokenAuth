@@ -10,6 +10,7 @@ use OpenApi\Annotations as OA;
  *     schema="UpdatePageConfigRequest",
  *     @OA\Property(property="company_name", type="string", maxLength=255),
  *     @OA\Property(property="slogan", type="string", maxLength=255, nullable=true),
+ *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="addresses", type="array", @OA\Items(type="string", maxLength=255)),
  *     @OA\Property(property="hotline", type="string", maxLength=255),
  *     @OA\Property(property="email", type="string", format="email", maxLength=255, nullable=true),
@@ -31,6 +32,7 @@ class UpdatePageConfigRequest extends FormRequest
         return [
             'company_name' => ['sometimes', 'required', 'string', 'max:255'],
             'slogan' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string'],
             'addresses' => ['sometimes', 'nullable', 'array'],
             'addresses.*' => ['required', 'string', 'max:255'],
             'hotline' => ['sometimes', 'nullable', 'numeric', 'max_digits:255'],
