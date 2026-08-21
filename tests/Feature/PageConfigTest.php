@@ -33,6 +33,7 @@ class PageConfigTest extends TestCase
             'slogan' => 'Chất lượng tạo niềm tin',
             'description' => 'Thông tin giới thiệu chung về công ty.',
             'addresses' => ['Kho 1', 'Kho 2'],
+            'map_url' => 'https://maps.google.com/?q=Ha+Noi',
             'hotline' => '0915799080',
             'email' => 'contact@example.com',
             'working_hour' => '08:00 - 18:00',
@@ -42,6 +43,7 @@ class PageConfigTest extends TestCase
         ])->fresh();
 
         $this->assertSame(['Kho 1', 'Kho 2'], $config->addresses);
+        $this->assertSame('https://maps.google.com/?q=Ha+Noi', $config->map_url);
         $this->assertSame('Chất lượng tạo niềm tin', $config->slogan);
         $this->assertSame('Thông tin giới thiệu chung về công ty.', $config->description);
         $this->assertSame('0915799080', $config->hotline);
@@ -58,6 +60,7 @@ class PageConfigTest extends TestCase
             'slogan' => 'Chất lượng tạo niềm tin',
             'description' => 'Thông tin giới thiệu chung về công ty.',
             'addresses' => ['Địa chỉ hợp lệ'],
+            'map_url' => 'https://maps.google.com/?q=Ha+Noi',
             'hotline' => '0915799080',
             'email' => 'contact@example.com',
             'socials' => ['facebook' => 'https://facebook.com/company'],
@@ -67,6 +70,7 @@ class PageConfigTest extends TestCase
             'company_name' => 'Công ty Nhựa',
             'slogan' => str_repeat('a', 256),
             'addresses' => [str_repeat('a', 256)],
+            'map_url' => 'khong-phai-url',
             'hotline' => '09abc',
             'email' => 'email-khong-hop-le',
             'socials' => ['facebook' => 'not-a-url'],
@@ -76,6 +80,7 @@ class PageConfigTest extends TestCase
         $this->assertTrue($invalid->fails());
         $this->assertArrayHasKey('slogan', $invalid->errors()->toArray());
         $this->assertArrayHasKey('addresses.0', $invalid->errors()->toArray());
+        $this->assertArrayHasKey('map_url', $invalid->errors()->toArray());
         $this->assertArrayHasKey('hotline', $invalid->errors()->toArray());
         $this->assertArrayHasKey('email', $invalid->errors()->toArray());
         $this->assertArrayHasKey('socials.facebook', $invalid->errors()->toArray());

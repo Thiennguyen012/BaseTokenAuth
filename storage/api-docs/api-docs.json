@@ -2448,6 +2448,12 @@
                             "maxLength": 255
                         }
                     },
+                    "map_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "maxLength": 2048
+                    },
                     "hotline": {
                         "type": "string",
                         "maxLength": 255
@@ -3122,6 +3128,11 @@
                         "items": {
                             "type": "string"
                         }
+                    },
+                    "map_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
                     },
                     "hotline": {
                         "type": "string",

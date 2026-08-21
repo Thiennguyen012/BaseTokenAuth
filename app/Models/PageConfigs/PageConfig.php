@@ -14,6 +14,7 @@ class PageConfig extends Model
         'slogan',
         'description',
         'addresses',
+        'map_url',
         'hotline',
         'email',
         'working_hour',

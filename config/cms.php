@@ -62,7 +62,7 @@ return [
         ],
         'page-configs' => [
             'title' => 'Cấu hình trang', 'description' => 'Quản lý thông tin chung của công ty và website.', 'api' => 'page-configs',
-            'columns' => ['company_name' => 'Tên công ty', 'slogan' => 'Slogan', 'description' => 'Mô tả', 'hotline' => 'Hotline', 'email' => 'Email', 'working_hour' => 'Giờ làm việc', 'addresses' => 'Địa chỉ'],
+            'columns' => ['company_name' => 'Tên công ty', 'slogan' => 'Slogan', 'description' => 'Mô tả', 'hotline' => 'Hotline', 'email' => 'Email', 'working_hour' => 'Giờ làm việc', 'addresses' => 'Địa chỉ', 'map_url' => 'URL bản đồ'],
             'fields' => [
                 ['name' => 'company_name', 'label' => 'Tên công ty', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên công ty'],
                 ['name' => 'slogan', 'label' => 'Slogan', 'type' => 'text', 'placeholder' => 'Nhập slogan'],
@@ -73,6 +73,7 @@ return [
                 ['name' => 'favicon', 'label' => 'Favicon', 'type' => 'single_file', 'accept' => 'image/png,image/x-icon,image/jpeg,image/webp'],
                 ['name' => 'logo', 'label' => 'Logo', 'type' => 'single_file', 'accept' => 'image/png,image/jpeg,image/webp'],
                 ['name' => 'addresses', 'label' => 'Địa chỉ', 'type' => 'repeatable_values', 'placeholder' => 'Nhập địa chỉ', 'add_label' => 'Thêm địa chỉ', 'empty_label' => 'Chưa có địa chỉ nào.'],
+                ['name' => 'map_url', 'label' => 'URL bản đồ', 'type' => 'url', 'placeholder' => 'Nhập URL Google Maps'],
                 ['name' => 'socials', 'label' => 'Mạng xã hội', 'type' => 'key_value', 'key_placeholder' => 'Tên nền tảng', 'value_placeholder' => 'Nhập URL'],
             ],
         ],
