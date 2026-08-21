@@ -57,6 +57,9 @@ class ProductVariantService
 
     public function create(array $data)
     {
+        $data['price'] = isset($data['price']) && $data['price'] !== '' && $data['price'] !== null ? $data['price'] : 0;
+        $data['stock'] = isset($data['stock']) && $data['stock'] !== '' && $data['stock'] !== null ? $data['stock'] : 0;
+
         return DB::transaction(function () use ($data) {
             $product = Product::query()->with('variantGroupConfigurations')->lockForUpdate()->findOrFail($data['product_id']);
             $optionIds = $this->validateAndNormalizeOptions($product, $data['option_ids']);
@@ -81,6 +84,9 @@ class ProductVariantService
 
     public function createAllCombinations(array $data): array
     {
+        $data['price'] = isset($data['price']) && $data['price'] !== '' && $data['price'] !== null ? $data['price'] : 0;
+        $data['stock'] = isset($data['stock']) && $data['stock'] !== '' && $data['stock'] !== null ? $data['stock'] : 0;
+
         return DB::transaction(function () use ($data) {
             $product = Product::query()
                 ->with(['variantGroupConfigurations.options'])
@@ -164,6 +170,13 @@ class ProductVariantService
 
     public function update($variant, array $data)
     {
+        if (array_key_exists('price', $data)) {
+            $data['price'] = isset($data['price']) && $data['price'] !== '' && $data['price'] !== null ? $data['price'] : 0;
+        }
+        if (array_key_exists('stock', $data)) {
+            $data['stock'] = isset($data['stock']) && $data['stock'] !== '' && $data['stock'] !== null ? $data['stock'] : 0;
+        }
+
         return DB::transaction(function () use ($variant, $data) {
             $variant = $variant->newQuery()->lockForUpdate()->findOrFail($variant->id);
             $productId = (int) ($data['product_id'] ?? $variant->product_id);
