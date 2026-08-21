@@ -10,7 +10,9 @@ class Category extends Model
 {
     protected $fillable = [
         'category_name',
+        'slug',
         'description',
+        'thumbnail_path',
     ];
 
     public function products(): BelongsToMany

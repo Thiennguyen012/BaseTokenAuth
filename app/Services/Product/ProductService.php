@@ -17,7 +17,7 @@ class ProductService
         $this->productRepository = $productRepository;
     }
 
-    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null)
+    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [])
     {
         $where = [];
 
@@ -26,16 +26,19 @@ class ProductService
                 'product_name' => ['product_name', 'like', '%' . $search . '%'],
                 'sku' => ['sku', 'like', '%' . $search . '%'],
                 'description' => ['description', 'like', '%' . $search . '%'],
+                'slug' => ['slug', 'like', '%' . $search . '%'],
             ];
-        }
-
-        if ($search && !isset($where['orWhere']['slug'])) {
-            $where['orWhere']['slug'] = ['slug', 'like', '%' . $search . '%'];
         }
 
         if ($categoryIds !== []) {
             foreach ($categoryIds as $categoryId) {
                 $where['whereHas'][] = ['categories', ['categories.id' => (int) $categoryId]];
+            }
+        }
+
+        if ($categorySlugs !== []) {
+            foreach ($categorySlugs as $categorySlug) {
+                $where['whereHas'][] = ['categories', ['categories.slug' => (string) $categorySlug]];
             }
         }
 
@@ -123,7 +126,7 @@ class ProductService
         });
     }
 
-    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null)
+    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [])
     {
         $where = ['is_active' => true];
         if ($search) {
@@ -136,6 +139,9 @@ class ProductService
         }
         foreach ($categoryIds as $categoryId) {
             $where['whereHas'][] = ['categories', ['categories.id' => (int) $categoryId]];
+        }
+        foreach ($categorySlugs as $categorySlug) {
+            $where['whereHas'][] = ['categories', ['categories.slug' => (string) $categorySlug]];
         }
         if ($isFeatured !== null) {
             $where['is_featured'] = $isFeatured;

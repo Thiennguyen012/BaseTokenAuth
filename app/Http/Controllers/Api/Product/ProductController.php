@@ -46,10 +46,24 @@ class ProductController extends Controller
         $perPage = $perPage > 0 ? min($perPage, Helpers::LIMIT_PER_PAGE) : Helpers::LIMIT_PER_PAGE;
         $search = $request->query('search', '');
         $categoryIds = array_values(array_unique(array_filter(array_map('intval', (array) $request->query('category_ids', [])))));
+        $rawSlugs = [];
+        if ($request->has('category_slugs')) {
+            $rawSlugs = array_merge($rawSlugs, (array) $request->query('category_slugs'));
+        }
+        if ($request->has('category_slug')) {
+            $rawSlugs = array_merge($rawSlugs, (array) $request->query('category_slug'));
+        }
+        $categorySlugs = [];
+        foreach ($rawSlugs as $item) {
+            foreach (explode(',', (string) $item) as $s) {
+                if (trim($s) !== '') $categorySlugs[] = trim($s);
+            }
+        }
+        $categorySlugs = array_values(array_unique($categorySlugs));
         $sort = $this->normalizeSort((string) $request->query('sort', 'latest'));
         $isFeatured = $request->has('is_featured') ? $request->boolean('is_featured') : null;
 
-        $products = $this->productService->paginate($perPage, $search, $categoryIds, $sort, $isFeatured);
+        $products = $this->productService->paginate($perPage, $search, $categoryIds, $sort, $isFeatured, $categorySlugs);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,

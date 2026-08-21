@@ -25,7 +25,16 @@ class UpdateCategoryRequest extends FormRequest
                 'max:100',
                 Rule::unique('categories', 'category_name')->ignore($categoryId),
             ],
+            'slug' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'slug')->ignore($categoryId),
+            ],
             'description' => 'sometimes|nullable|string|max:255',
+            'thumbnail_path' => 'sometimes|nullable',
+            'thumbnail' => 'sometimes|nullable|file|image|max:5120',
         ];
     }
 

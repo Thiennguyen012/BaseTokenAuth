@@ -153,21 +153,28 @@ window.CMS = (() => {
     }
 
     function tableValue(key, value) {
-        if (key === 'first_image') {
+        if (key === 'first_image' || key === 'thumbnail_path' || key === 'thumbnail_url') {
             if (!value) return '<span class="table-image-empty">Chưa có ảnh</span>';
             const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
-            const url = value.external_url || (value.path ? `${storage}/${String(value.path).replace(/^\//, '')}` : '');
+            let url = '';
+            if (typeof value === 'object' && value !== null) {
+                url = value.external_url || (value.path ? `${storage}/${String(value.path).replace(/^\//, '')}` : '');
+            } else if (typeof value === 'string' && value.trim()) {
+                url = /^https?:\/\//.test(value) ? value : `${storage}/${value.replace(/^\//, '')}`;
+            }
             return url
-                ? `<img class="table-image" src="${esc(url)}" alt="${esc(value.title || value.file_name || 'Ảnh biến thể')}" loading="lazy">`
+                ? `<img class="table-image" src="${esc(url)}" alt="" loading="lazy">`
                 : '<span class="table-image-empty">Chưa có ảnh</span>';
         }
         if (key === 'price' && value !== null && value !== undefined && value !== '') {
             return `${new Intl.NumberFormat('vi-VN').format(Number(value))} ₫`;
         }
-        if (key === 'category_names' || key === 'consultation_content') {
-            const full = String(value || '—');
+        if (key === 'category_names' || key === 'consultation_content' || key === 'description') {
+            const raw = String(value || '');
+            const textOnly = raw.replace(/<[^>]*>/g, '').trim();
+            const full = textOnly || (raw && raw !== 'null' && raw !== 'undefined' ? raw : '—');
             const short = full.length > 45 ? `${full.slice(0, 45).trim()}...` : full;
-            return `<span class="table-ellipsis" title="${esc(full)}">${esc(short)}</span>`;
+            return `<span class="table-ellipsis" title="${esc(full)}">${esc(short || '—')}</span>`;
         }
         return show(value);
     }
@@ -1136,7 +1143,9 @@ window.CMS = (() => {
         form.querySelectorAll('[data-multi-upload]').forEach(upload => {
             const fieldName = upload.dataset.fieldName;
             let existing = row[fieldName] || [];
-            if (!Array.isArray(existing) && existing) existing = [existing];
+            if (!Array.isArray(existing) && existing) {
+                existing = typeof existing === 'string' ? [{path: existing}] : [existing];
+            }
             if (!existing.length && upload.dataset.singleUpload && row[`${fieldName}_path`]) {
                 existing = [{path: row[`${fieldName}_path`]}];
             }

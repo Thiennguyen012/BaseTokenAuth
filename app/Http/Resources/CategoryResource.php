@@ -28,7 +28,13 @@ class CategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'category_name' => $this->category_name,
+            'slug' => $this->slug,
             'description' => $this->description,
+            'thumbnail_path' => $this->thumbnail_path,
+            'thumbnail_url' => $this->thumbnail_path
+                ? (filter_var($this->thumbnail_path, FILTER_VALIDATE_URL) ? $this->thumbnail_path : asset('storage/' . ltrim($this->thumbnail_path, '/')))
+                : null,
+            'first_image' => $this->thumbnail_path ? ['path' => $this->thumbnail_path] : null,
             'sort_order' => $this->whenPivotLoaded('product_categories', fn () => (int) $this->pivot->sort_order),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),

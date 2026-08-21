@@ -20,8 +20,10 @@ Route::prefix('api')->group(function () {
     Route::get('/products', [LandingController::class, 'products']);
     Route::get('/products/{id}', [LandingController::class, 'product']);
     Route::get('/categories', [LandingController::class, 'categories']);
+    Route::get('/categories/{slug}', [LandingController::class, 'category']);
     Route::get('/page-contents', [LandingController::class, 'pages']);
-    Route::get('/page-contents/{id}', [LandingController::class, 'page']);
+    Route::get('/page-contents/{slug}', [LandingController::class, 'page']);
+    Route::get('/pages/{slug}', [LandingController::class, 'page']);
     Route::get('/page-configs', [LandingController::class, 'config']);
     Route::post('/customer-contacts', [CustomerContactController::class, 'publicStore'])->middleware('throttle:10,1');
 });

@@ -17,7 +17,10 @@ class StoreCategoryRequest extends FormRequest
     {
         return [
             'category_name' => 'required|string|max:100|unique:categories,category_name',
+            'slug' => 'nullable|string|max:255|unique:categories,slug',
             'description' => 'nullable|string|max:255',
+            'thumbnail_path' => 'nullable',
+            'thumbnail' => 'nullable|file|image|max:5120',
         ];
     }
 

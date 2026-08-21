@@ -20,10 +20,12 @@ return [
         ],
         'categories' => [
             'title' => 'Danh mục sản phẩm', 'description' => 'Tổ chức danh mục cho cửa hàng.', 'api' => 'categories',
-            'columns' => ['category_name' => 'Tên danh mục', 'description' => 'Mô tả'],
+            'columns' => ['first_image' => 'Thumbnail', 'category_name' => 'Tên danh mục', 'slug' => 'Slug', 'description' => 'Mô tả'],
             'fields' => [
-                ['name' => 'category_name', 'label' => 'Tên danh mục', 'type' => 'text', 'required' => true],
+                ['name' => 'category_name', 'label' => 'Tên danh mục', 'type' => 'text', 'required' => true, 'placeholder' => 'Ví dụ: Chai nhựa hdpe'],
+                ['name' => 'slug', 'label' => 'Slug danh mục', 'type' => 'text', 'placeholder' => 'Tự động tạo từ tên nếu để trống (ví dụ: chai-nhua-hdpe)'],
                 ['name' => 'description', 'label' => 'Mô tả', 'type' => 'richtext'],
+                ['name' => 'thumbnail_path', 'label' => 'Ảnh Thumbnail', 'type' => 'single_file', 'accept' => 'image/jpeg,image/png,image/webp'],
             ],
         ],
         'customer-contacts' => [

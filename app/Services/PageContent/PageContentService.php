@@ -44,11 +44,23 @@ class PageContentService
         return $this->pageContentRepository->get($where, $orderBy, ['*']);
     }
 
+    public function findBySlug(string $slug)
+    {
+        $trimmed = ltrim($slug, '/');
+        $pageContent = $this->pageContentRepository->first(['slug' => $slug], [])
+            ?? $this->pageContentRepository->first(['slug' => $trimmed], [])
+            ?? $this->pageContentRepository->first(['slug' => '/' . $trimmed], []);
+
+        return $pageContent?->load(['sections.files', 'sections.items.files']);
+    }
+
     public function find($id)
     {
-        $pageContent = is_numeric($id)
-            ? $this->pageContentRepository->find($id)
-            : $this->pageContentRepository->first(['slug' => $id], []);
+        if (!is_numeric($id)) {
+            return $this->findBySlug((string) $id);
+        }
+
+        $pageContent = $this->pageContentRepository->find($id);
 
         return $pageContent?->load(['sections.files', 'sections.items.files']);
     }
