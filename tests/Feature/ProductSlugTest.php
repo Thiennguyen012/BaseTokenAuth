@@ -22,6 +22,18 @@ class ProductSlugTest extends TestCase
         $this->assertSame('ao-thun-basic-2', $second->slug);
     }
 
+    public function test_service_regenerates_slug_when_product_name_changes(): void
+    {
+        $service = app(ProductService::class);
+        $existing = $service->create(['product_name' => 'Ống Nhựa PVC']);
+        $product = $service->create(['product_name' => 'Sản phẩm cũ']);
+
+        $updated = $service->update($product, ['product_name' => 'Ống Nhựa PVC']);
+
+        $this->assertSame('ong-nhua-pvc-2', $updated->slug);
+        $this->assertSame('ong-nhua-pvc', $existing->slug);
+    }
+
     public function test_public_product_detail_accepts_slug(): void
     {
         $product = Product::query()->create([

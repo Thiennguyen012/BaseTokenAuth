@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\PageConfigs\PageConfig;
 use App\Repositories\Category\CategoryInterface;
 use App\Repositories\Category\CategoryRepository;
+use App\Repositories\Tag\TagInterface;
+use App\Repositories\Tag\TagRepository;
+use App\Repositories\TagGroup\TagGroupInterface;
+use App\Repositories\TagGroup\TagGroupRepository;
 use App\Repositories\CustomerContact\CustomerContactInterface;
 use App\Repositories\CustomerContact\CustomerContactRepository;
 use App\Repositories\File\FileInterface;
@@ -31,6 +36,8 @@ use App\Repositories\SectionItem\SectionItemRepository;
 use App\Repositories\User\UserInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CategoryInterface::class, CategoryRepository::class);
+        $this->app->bind(TagInterface::class, TagRepository::class);
+        $this->app->bind(TagGroupInterface::class, TagGroupRepository::class);
         $this->app->bind(CustomerContactInterface::class, CustomerContactRepository::class);
         $this->app->bind(FileInterface::class, FileRepository::class);
         $this->app->bind(ProductInterface::class, ProductRepository::class);
@@ -60,6 +69,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('cms.partials.sidebar', function ($view): void {
+            $pageConfig = PageConfig::query()->with('files')->first();
+            $logoFile = $pageConfig?->files->firstWhere('type', 'logo');
+            $logoPath = $logoFile?->path ?: $pageConfig?->logo_path;
+            $logoUrl = $logoFile?->external_url;
+
+            if (!$logoUrl && $logoPath) {
+                $disk = Storage::disk($logoFile?->disk ?: 'public');
+                if ($disk->exists($logoPath)) {
+                    $logoUrl = $disk->url($logoPath);
+                }
+            }
+
+            $view->with([
+                'cmsCompanyName' => $pageConfig?->company_name ?: 'Nhựa CMS',
+                'cmsCompanyLogoUrl' => $logoUrl,
+            ]);
+        });
+
         $isCachingConfig = $this->app->runningInConsole()
             && in_array('config:cache', $_SERVER['argv'] ?? [], true);
 

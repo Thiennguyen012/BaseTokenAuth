@@ -9,9 +9,12 @@ use App\Http\Resources\PageConfigResource;
 use App\Http\Resources\PageContentResource;
 use App\Http\Resources\ProductResource;
 use App\Services\Category\CategoryService;
+use App\Services\Tag\TagService;
 use App\Services\PageConfig\PageConfigService;
 use App\Services\PageContent\PageContentService;
 use App\Services\Product\ProductService;
+use App\Services\TagGroup\TagGroupService;
+use App\Http\Resources\TagGroupResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,6 +25,8 @@ class LandingController extends Controller
     public function __construct(
         protected ProductService $products,
         protected CategoryService $categories,
+        protected TagService $tags,
+        protected TagGroupService $tagGroups,
         protected PageContentService $pages,
         protected PageConfigService $pageConfig,
     ) {}
@@ -58,11 +63,67 @@ class LandingController extends Controller
         }
         $categorySlugs = array_values(array_unique($categorySlugs));
 
-        $items = $this->products->paginatePublic($limit, $search, $categoryIds, $sort, $isFeatured, $categorySlugs);
+        $rawTagSlugs = [];
+        foreach (['tag', 'tags', 'tag-slugs', 'tag_slug', 'tag_slugs', 'nhan'] as $key) {
+            if ($request->has($key)) {
+                $rawTagSlugs = array_merge($rawTagSlugs, (array) $request->query($key));
+            }
+        }
+        $tagSlugs = [];
+        foreach ($rawTagSlugs as $item) {
+            foreach (explode(',', (string) $item) as $s) {
+                if (trim($s) !== '') $tagSlugs[] = trim($s);
+            }
+        }
+        $tagSlugs = array_values(array_unique($tagSlugs));
+
+        $rawTagIds = [];
+        foreach (['tag_id', 'tag_ids', 'tag-id', 'tag-ids', 'nhan-ids'] as $key) {
+            if ($request->has($key)) {
+                $rawTagIds = array_merge($rawTagIds, (array) $request->query($key));
+            }
+        }
+        $tagIds = [];
+        foreach ($rawTagIds as $item) {
+            foreach (explode(',', (string) $item) as $id) {
+                if (ctype_digit(trim($id))) $tagIds[] = (int) trim($id);
+            }
+        }
+        $tagIds = array_values(array_unique($tagIds));
+
+        $rawGroupIds = [];
+        foreach (['tag_group_id', 'tag_group_ids', 'tag-group-ids'] as $key) {
+            if ($request->has($key)) {
+                $rawGroupIds = array_merge($rawGroupIds, (array) $request->query($key));
+            }
+        }
+        $tagGroupIds = [];
+        foreach ($rawGroupIds as $item) {
+            foreach (explode(',', (string) $item) as $id) {
+                if (ctype_digit(trim($id))) $tagGroupIds[] = (int) trim($id);
+            }
+        }
+        $tagGroupIds = array_values(array_unique($tagGroupIds));
+
+        $rawGroupCodes = [];
+        foreach (['tag_group_code', 'tag_group_codes', 'tag-group-codes'] as $key) {
+            if ($request->has($key)) {
+                $rawGroupCodes = array_merge($rawGroupCodes, (array) $request->query($key));
+            }
+        }
+        $tagGroupCodes = [];
+        foreach ($rawGroupCodes as $item) {
+            foreach (explode(',', (string) $item) as $code) {
+                if (trim($code) !== '') $tagGroupCodes[] = trim($code);
+            }
+        }
+        $tagGroupCodes = array_values(array_unique($tagGroupCodes));
+
+        $items = $this->products->paginatePublic($limit, $search, $categoryIds, $sort, $isFeatured, $categorySlugs, $tagSlugs, $tagIds, $tagGroupIds, $tagGroupCodes);
         return $this->paginated($items, ProductResource::collection($items->getCollection()), 'Lấy danh sách sản phẩm thành công');
     }
 
-    /** @OA\Get(path="/api/products/{id}", summary="Chi tiết sản phẩm công khai theo ID hoặc slug", tags={"Public"}, @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")), @OA\Response(response=200, description="Thành công"), @OA\Response(response=404, description="Không tồn tại")) */
+    /** @OA\Get(path="/api/products/{id}", summary="Chi tiết sản phẩm công khai theo ID hoặc slug", tags={"Public"}, @OA\Parameter(name="slug", in="path", required=true, @OA\Schema(type="string")), @OA\Response(response=200, description="Thành công"), @OA\Response(response=404, description="Không tồn tại")) */
     public function product(string $id): JsonResponse
     {
         $item = $this->products->findPublic($id);
@@ -84,6 +145,30 @@ class LandingController extends Controller
         $item = $this->categories->find($slug);
         abort_if(!$item, 404, 'Không tìm thấy danh mục');
         return response()->json(['status_code' => 200, 'message' => 'Lấy chi tiết danh mục thành công', 'data' => new CategoryResource($item)]);
+    }
+
+    public function tags(Request $request): JsonResponse
+    {
+        $limit = max(1, min((int) $request->query('per_page', Helpers::LIMIT_PER_PAGE), Helpers::LIMIT_PER_PAGE));
+        $items = $this->tags->paginate($limit, (string) $request->query('search', ''));
+        return $this->paginated($items, TagResource::collection($items->getCollection()), 'Lấy danh sách nhãn sản phẩm thành công');
+    }
+
+    public function tagGroups(Request $request): JsonResponse
+    {
+        $items = $this->tagGroups->getAll((string) $request->query('search', ''));
+        return response()->json([
+            'status_code' => Response::HTTP_OK,
+            'message' => 'Lấy danh sách nhóm nhãn thành công',
+            'data' => TagGroupResource::collection($items),
+        ]);
+    }
+
+    public function tag(string $slug): JsonResponse
+    {
+        $item = $this->tags->find($slug);
+        abort_if(!$item, 404, 'Không tìm thấy nhãn sản phẩm');
+        return response()->json(['status_code' => 200, 'message' => 'Lấy chi tiết nhãn sản phẩm thành công', 'data' => new TagResource($item)]);
     }
 
     /** @OA\Get(path="/api/page-contents", summary="Danh sách nội dung trang công khai", tags={"Public"}, @OA\Response(response=200, description="Thành công")) */

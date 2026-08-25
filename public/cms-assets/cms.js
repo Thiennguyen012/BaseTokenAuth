@@ -3,6 +3,7 @@ window.CMS = (() => {
     const toastKey = 'nhua_cms_toast';
     const api = () => document.body.dataset.api || '/admin/api';
     const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    const loadingMarkup = () => '<span class="cms-loading-content"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span>Đang tải dữ liệu...</span></span>';
     let loggingOut = false;
     let refreshPromise = null;
     let refreshTimer = null;
@@ -152,7 +153,17 @@ window.CMS = (() => {
         return esc(value ?? '—');
     }
 
-    function tableValue(key, value) {
+    function tableValue(key, value, row = null) {
+        if (typeof value === 'boolean' || key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required') {
+            const isChecked = Boolean(value === true || value === 1 || value === '1' || value === 'true' || value === 'Active');
+            if (row && row.id && (key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required' || typeof value === 'boolean')) {
+                return `<label class="switcher mb-0" title="Bật / Tắt">
+                    <input type="checkbox" class="switcher_input toggle-row-boolean" data-field="${esc(key)}" data-id="${row.id}" ${isChecked ? 'checked' : ''}>
+                    <span class="switcher_control"></span>
+                </label>`;
+            }
+            return `<span class="badge ${isChecked ? 'on' : ''}">${isChecked ? 'Có' : 'Không'}</span>`;
+        }
         if (key === 'first_image' || key === 'thumbnail_path' || key === 'thumbnail_url') {
             if (!value) return '<span class="table-image-empty">Chưa có ảnh</span>';
             const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
@@ -205,18 +216,28 @@ window.CMS = (() => {
         const path = file.path ? `${document.body.dataset.storage || '/storage'}/${String(file.path).replace(/^\//, '')}` : '';
         if (kind === 'image') {
             const url = source === 'new' ? URL.createObjectURL(file) : path;
-            item.innerHTML = `<div class="upload-thumb"><img src="${esc(url)}" alt=""></div><div class="upload-file-info"><strong title="${esc(name)}">${esc(name)}</strong><small>${fileSize(file.size)}</small></div>`;
+            item.innerHTML = `<div class="upload-thumb"><img src="${esc(url)}" alt=""></div>`;
             if (source === 'new') item._objectUrl = url;
-        } else item.innerHTML = `<div class="upload-doc-icon type-${kind.toLowerCase()}">${esc(kind)}</div><div class="upload-file-info"><strong title="${esc(name)}">${esc(name)}</strong><small>${fileSize(file.size)}</small></div>`;
+        } else item.innerHTML = `<div class="upload-doc-icon type-${kind.toLowerCase()}">${esc(kind)}</div><div class="upload-file-info"><strong title="${esc(name)}">${esc(name)}</strong></div>`;
         if (source === 'new') {
-            const button = document.createElement('button'); button.type = 'button'; button.className = 'upload-remove'; button.title = 'Bỏ file'; button.textContent = '×';
+            const downloadLink = document.createElement('a');
+            downloadLink.className = 'upload-download'; downloadLink.href = item._objectUrl || '#'; downloadLink.download = name; downloadLink.target = '_blank'; downloadLink.title = 'Tải xuống file';
+            downloadLink.innerHTML = '<i class="ri-download-2-line"></i>';
+            item.appendChild(downloadLink);
+            const button = document.createElement('button'); button.type = 'button'; button.className = 'upload-remove'; button.title = 'Xóa file'; button.innerHTML = '<i class="ri-close-line"></i>';
             button.onclick = () => { if (item._objectUrl) URL.revokeObjectURL(item._objectUrl); remove(); }; item.appendChild(button);
         } else {
             item.classList.add('existing');
+            if (path) {
+                const downloadLink = document.createElement('a');
+                downloadLink.className = 'upload-download'; downloadLink.href = path; downloadLink.download = name; downloadLink.target = '_blank'; downloadLink.title = 'Tải xuống file';
+                downloadLink.innerHTML = '<i class="ri-download-2-line"></i>';
+                item.appendChild(downloadLink);
+            }
             if (file.id) {
                 const button = document.createElement('button');
-                button.type = 'button'; button.className = 'upload-remove stored-file-remove'; button.title = 'Xóa file đã lưu'; button.setAttribute('aria-label', 'Xóa file đã lưu');
-                button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+                button.type = 'button'; button.className = 'upload-remove-existing'; button.title = 'Xóa file đã lưu'; button.setAttribute('aria-label', 'Xóa file đã lưu');
+                button.innerHTML = '<i class="ri-close-line"></i>';
                 button.onclick = async () => {
                     if (!await confirmRemoveStoredFile(name)) return;
                     button.disabled = true;
@@ -237,12 +258,15 @@ window.CMS = (() => {
 
     function setupMultiUploads(form) {
         form.querySelectorAll('[data-multi-upload]').forEach(upload => {
-            const input = upload.querySelector('[data-upload-input]'), zone = upload.querySelector('[data-upload-dropzone]'), preview = upload.querySelector('[data-upload-preview]');
+            const input = upload.querySelector('[data-upload-input]'), zone = upload.querySelector('[data-upload-dropzone]'), preview = upload.querySelector('[data-upload-preview]'), filenameLabel = upload.querySelector('[data-upload-filename]');
             let files = [];
             const sync = () => {
                 const transfer = new DataTransfer(); files.forEach(file => transfer.items.add(file)); input.files = transfer.files;
                 preview.querySelectorAll('[data-new-file]').forEach(item => item.remove());
                 files.forEach((file, index) => { const item = renderUploadItem(file, 'new', () => { files.splice(index, 1); sync(); }); item.dataset.newFile = '1'; preview.appendChild(item); });
+                if (filenameLabel) {
+                    filenameLabel.textContent = files.length ? `${files.length} file đã chọn` : 'Chọn File';
+                }
             };
             const add = incoming => { files = upload.dataset.singleUpload ? incoming.slice(0, 1) : [...files, ...incoming]; sync(); };
             input.addEventListener('change', () => add([...input.files]));
@@ -254,6 +278,37 @@ window.CMS = (() => {
         });
     }
 
+    function renderStandalonePagination(container, meta, onPage, fallbackPerPage = 20) {
+        if (!container) return;
+        const page = Number(meta?.current_page) || 1;
+        const lastPage = Math.max(1, Number(meta?.last_page) || 1);
+        const perPage = Number(meta?.per_page) || fallbackPerPage;
+        const total = Number(meta?.total) || 0;
+        const info = container.querySelector('[data-pagination-info]');
+        const list = container.querySelector('[data-pagination-list]');
+        const from = total ? ((page - 1) * perPage) + 1 : 0;
+        const to = total ? Math.min(page * perPage, total) : 0;
+        if (info) info.textContent = `Hiển thị ${from}–${to} trong ${total} bản ghi`;
+        if (!list) return;
+        const candidates = lastPage <= 7
+            ? Array.from({length: lastPage}, (_, index) => index + 1)
+            : [...new Set([1, lastPage, page - 1, page, page + 1])].filter(item => item >= 1 && item <= lastPage).sort((a, b) => a - b);
+        const pages = [];
+        candidates.forEach((item, index) => {
+            if (index && item - candidates[index - 1] > 1) pages.push('…');
+            pages.push(item);
+        });
+        container.hidden = false;
+        list.innerHTML = `<li class="page-item ${page <= 1 ? 'disabled' : ''}"><button type="button" class="page-link" data-page="${page - 1}" aria-label="Trang trước">‹</button></li>
+            ${pages.map(item => item === '…' ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : `<li class="page-item ${item === page ? 'active' : ''}"><button type="button" class="page-link" data-page="${item}">${item}</button></li>`).join('')}
+            <li class="page-item ${page >= lastPage ? 'disabled' : ''}"><button type="button" class="page-link" data-page="${page + 1}" aria-label="Trang sau">›</button></li>`;
+        list.querySelectorAll('[data-page]').forEach(button => button.onclick = () => {
+            const nextPage = Number(button.dataset.page);
+            if (nextPage < 1 || nextPage > lastPage || nextPage === page) return;
+            onPage(nextPage);
+        });
+    }
+
     function indexPage() {
         const root = document.querySelector('.module-table');
         const endpoint = root.dataset.endpoint;
@@ -262,11 +317,52 @@ window.CMS = (() => {
         const columns = JSON.parse(root.querySelector('[data-columns]').textContent);
         const tbody = root.querySelector('[data-table-body]');
         const filters = [...root.querySelectorAll('[data-filter-name]')];
+        const perPage = Number(root.dataset.perPage) || 20;
+        const pagination = root.querySelector('[data-pagination]');
+        const paginationInfo = root.querySelector('[data-pagination-info]');
+        const paginationList = root.querySelector('[data-pagination-list]');
+        let currentPage = 1;
         let timer;
-        async function load(search = '') {
-            tbody.innerHTML = `<tr><td class="empty loading-state" colspan="${columns.length + 1}">Đang tải dữ liệu...</td></tr>`;
+        const paginationPages = (page, lastPage) => {
+            if (lastPage <= 7) return Array.from({length: lastPage}, (_, index) => index + 1);
+            const pages = new Set([1, lastPage, page - 1, page, page + 1]);
+            const sorted = [...pages].filter(item => item >= 1 && item <= lastPage).sort((a, b) => a - b);
+            const result = [];
+            sorted.forEach((item, index) => {
+                if (index && item - sorted[index - 1] > 1) result.push('…');
+                result.push(item);
+            });
+            return result;
+        };
+        const renderPagination = meta => {
+            const page = Number(meta?.current_page) || 1;
+            const lastPage = Math.max(1, Number(meta?.last_page) || 1);
+            const total = Number(meta?.total) || 0;
+            const pageSize = Number(meta?.per_page) || perPage;
+            currentPage = page;
+            if (paginationInfo) {
+                const from = total ? ((page - 1) * pageSize) + 1 : 0;
+                const to = total ? Math.min(page * pageSize, total) : 0;
+                paginationInfo.textContent = `Hiển thị ${from}–${to} trong ${total} bản ghi`;
+            }
+            if (!pagination || !paginationList) return;
+            pagination.hidden = false;
+            paginationList.innerHTML = `
+                <li class="page-item ${page <= 1 ? 'disabled' : ''}"><button type="button" class="page-link" data-page="${page - 1}" aria-label="Trang trước">‹</button></li>
+                ${paginationPages(page, lastPage).map(item => item === '…'
+                    ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+                    : `<li class="page-item ${item === page ? 'active' : ''}"><button type="button" class="page-link" data-page="${item}">${item}</button></li>`).join('')}
+                <li class="page-item ${page >= lastPage ? 'disabled' : ''}"><button type="button" class="page-link" data-page="${page + 1}" aria-label="Trang sau">›</button></li>`;
+            paginationList.querySelectorAll('[data-page]').forEach(button => button.onclick = () => {
+                const nextPage = Number(button.dataset.page);
+                if (nextPage < 1 || nextPage > lastPage || nextPage === currentPage) return;
+                load(searchInput.value, nextPage);
+            });
+        };
+        async function load(search = '', page = 1) {
+            tbody.innerHTML = `<tr><td class="empty loading-state" colspan="${columns.length + 1}">${loadingMarkup()}</td></tr>`;
             try {
-                const params = new URLSearchParams({per_page: '50', search});
+                const params = new URLSearchParams({per_page: String(perPage), page: String(page), search});
                 Object.entries(fixedParams).forEach(([name, value]) => params.set(name, value));
                 filters.forEach(filter => {
                     const explicitQueryName = filter.dataset.filterQueryName;
@@ -280,24 +376,75 @@ window.CMS = (() => {
                 });
                 const result = await request(`/${endpoint}?${params.toString()}`);
                 const rows = result.data || [];
+                const lastPage = Math.max(1, Number(result.meta?.last_page) || 1);
+                if (page > lastPage) return load(search, lastPage);
                 tbody.innerHTML = rows.length ? rows.map(row => {
                     const variantsAction = endpoint === 'products'
-                        ? `<a class="btn icon-button variants-link" href="/cms/products/${row.id}/variants" title="Quản lý biến thể" aria-label="Quản lý biến thể"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>`
+                        ? `<a class="btn btn-outline-success btn-sm square-btn mr-1" href="/cms/products/${row.id}/variants" title="Quản lý biến thể" aria-label="Quản lý biến thể"><i class="tio-layers-outlined"></i></a>`
                         : '';
-                    return `<tr>${columns.map(key => `<td>${tableValue(key, row[key])}</td>`).join('')}<td><div class="actions">${variantsAction}<a class="btn icon-button" href="${editUrl}/${row.id}/edit" title="Sửa" aria-label="Sửa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></a><button class="btn icon-button danger-icon delete" data-id="${row.id}" title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></td></tr>`;
+                    return `<tr>${columns.map(key => `<td>${tableValue(key, row[key], row)}</td>`).join('')}<td><div class="d-flex justify-content-end align-items-center gap-1">${variantsAction}<a class="btn btn-outline-info btn-sm square-btn mr-1" href="${editUrl}/${row.id}/edit" title="Sửa" aria-label="Sửa"><i class="tio-edit"></i></a><button class="btn btn-outline-danger btn-sm square-btn delete" data-id="${row.id}" title="Xóa" aria-label="Xóa"><i class="tio-delete"></i></button></div></td></tr>`;
                 }).join('') : `<tr><td class="empty" colspan="${columns.length + 1}">Chưa có dữ liệu</td></tr>`;
-                tbody.querySelectorAll('.delete').forEach(button => button.onclick = async () => {
-                    if (!confirm('Bạn chắc chắn muốn xóa?')) return;
-                    try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa'); load(); }
-                    catch (error) { toast(error.message, true); }
+
+                tbody.querySelectorAll('.toggle-row-boolean').forEach(checkbox => checkbox.onchange = async () => {
+                    const id = checkbox.dataset.id;
+                    const field = checkbox.dataset.field;
+                    const isChecked = checkbox.checked;
+                    checkbox.disabled = true;
+                    try {
+                        const payload = {};
+                        payload[field] = isChecked;
+                        const result = await request(`/${endpoint}/${id}`, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(payload),
+                        });
+                        toast(result.message || 'Đã cập nhật trạng thái');
+                    } catch (error) {
+                        checkbox.checked = !isChecked;
+                        toast(error.message, true);
+                    } finally {
+                        checkbox.disabled = false;
+                    }
                 });
+
+                tbody.querySelectorAll('.delete').forEach(button => button.onclick = async () => {
+                    const confirmed = await confirmSwal({
+                        title: 'Bạn có chắc chắn muốn xóa?',
+                        text: 'Dữ liệu này sẽ bị xóa và không thể hoàn tác!',
+                        icon: 'warning',
+                        confirmButtonText: 'Đồng ý xóa',
+                        cancelButtonText: 'Hủy',
+                        confirmButtonColor: '#ed4c78'
+                    });
+                    if (!confirmed) return;
+                    try {
+                        const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'});
+                        toast(result.message || 'Đã xóa thành công');
+                        load(searchInput.value, currentPage);
+                    } catch (error) {
+                        toast(error.message, true);
+                    }
+                });
+                renderPagination(result.meta || {current_page: page, last_page: 1, per_page: perPage, total: rows.length});
             } catch (error) { tbody.innerHTML = `<tr><td class="empty" colspan="${columns.length + 1}">${esc(error.message)}</td></tr>`; }
         }
         const searchInput = root.querySelector('[data-search]');
         Promise.all(filters.map(async filter => {
-            const items = filter.dataset.inlineItems
-                ? JSON.parse(filter.dataset.inlineItems)
-                : ((await request(`/${filter.dataset.source}?per_page=100`)).data || []);
+            let items;
+            if (filter.dataset.inlineItems) {
+                items = JSON.parse(filter.dataset.inlineItems);
+            } else {
+                const firstPage = await request(`/${filter.dataset.source}?per_page=100&page=1`);
+                items = firstPage.data || [];
+                const lastPage = Math.max(1, Number(firstPage.meta?.last_page) || 1);
+                if (lastPage > 1) {
+                    const remainingPages = await Promise.all(Array.from(
+                        {length: lastPage - 1},
+                        (_, index) => request(`/${filter.dataset.source}?per_page=100&page=${index + 2}`),
+                    ));
+                    remainingPages.forEach(response => items.push(...(response.data || [])));
+                }
+            }
             if (filter.dataset.filterMultiple) {
                 filter._selected = [];
                 const chips = filter.closest('[data-filter-wrap]').querySelector('[data-filter-chips]');
@@ -307,9 +454,13 @@ window.CMS = (() => {
                 const filterMenu = filterWrap.querySelector('[data-filter-menu]');
                 const renderCheckboxMenu = () => {
                     const selectedIds = new Set(filter._selected.map(item => String(item.id)));
-                    filterSummary.textContent = selectedIds.size
-                        ? `Đã chọn ${selectedIds.size} giá trị`
-                        : (filter.dataset.filterLabel || 'Chọn giá trị để lọc');
+                    if (selectedIds.size === 0) {
+                        filterSummary.textContent = filter.dataset.filterLabel || 'Chọn giá trị để lọc';
+                    } else if (selectedIds.size === 1) {
+                        filterSummary.textContent = filter._selected[0].name;
+                    } else {
+                        filterSummary.textContent = `Đã chọn ${selectedIds.size} giá trị`;
+                    }
                     filterMenu.innerHTML = items.length ? items.map(item => {
                         const id = String(item[filter.dataset.value]);
                         return `<label class="checkbox-filter-option"><input type="checkbox" value="${esc(id)}" ${selectedIds.has(id) ? 'checked' : ''}><span>${esc(item[filter.dataset.text])}</span></label>`;
@@ -331,11 +482,7 @@ window.CMS = (() => {
                 const render = () => {
                     const selectedIds = new Set(filter._selected.map(item => String(item.id)));
                     filter.innerHTML = `<option value="">${esc(filter.dataset.filterLabel || 'Chọn giá trị để lọc')}</option>` + items.filter(item => !selectedIds.has(String(item[filter.dataset.value]))).map(item => `<option value="${item[filter.dataset.value]}">${esc(item[filter.dataset.text])}</option>`).join('');
-                    chips.innerHTML = filter._selected.map(item => `<span class="filter-chip">${esc(item.name)}<button type="button" data-remove-filter="${item.id}" aria-label="Bỏ bộ lọc">×</button></span>`).join('');
-                    chips.querySelectorAll('[data-remove-filter]').forEach(button => button.onclick = () => {
-                        filter._selected = filter._selected.filter(item => String(item.id) !== button.dataset.removeFilter);
-                        render(); load(searchInput.value);
-                    });
+                    if (chips) chips.innerHTML = '';
                 };
                 filter.onchange = () => {
                     if (!filter.value) return;
@@ -397,54 +544,93 @@ window.CMS = (() => {
         return overlay;
     }
 
+    function confirmSwal({ title, text, icon = 'warning', confirmButtonText = 'Đồng ý', cancelButtonText = 'Hủy', confirmButtonColor = '#377dff', cancelButtonColor = '#677788' }) {
+        const swalObj = window.Swal || window.swal || window.Sweetalert2;
+        if (swalObj && typeof swalObj.fire === 'function') {
+            return swalObj.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                type: icon,
+                showCancelButton: true,
+                confirmButtonColor: confirmButtonColor,
+                cancelButtonColor: cancelButtonColor,
+                confirmButtonText: confirmButtonText,
+                cancelButtonText: cancelButtonText,
+                reverseButtons: true
+            }).then(result => Boolean(result.value || result.isConfirmed));
+        }
+        if (typeof swalObj === 'function') {
+            return new Promise(resolve => {
+                swalObj({
+                    title: title,
+                    text: text,
+                    type: icon,
+                    showCancelButton: true,
+                    confirmButtonColor: confirmButtonColor,
+                    cancelButtonColor: cancelButtonColor,
+                    confirmButtonText: confirmButtonText,
+                    cancelButtonText: cancelButtonText,
+                    reverseButtons: true
+                }, function(isConfirm) {
+                    resolve(Boolean(isConfirm));
+                });
+            });
+        }
+        return Promise.resolve(window.confirm(`${title}\n${text}`));
+    }
+
     function confirmGroupEdit(group, productsCount) {
-        return new Promise(resolve => {
-            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Cảnh báo thay đổi nhóm biến thể</h3><p>Nhóm <strong>${esc(group.group_name)}</strong> đang được sử dụng bởi <strong>${productsCount} sản phẩm</strong>.</p></div></div><div class="cms-alert">Việc đổi tên hoặc mã nhóm sẽ hiển thị trên tất cả sản phẩm đang sử dụng nhóm này. Bạn có muốn tiếp tục?</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn primary" data-confirm>Tiếp tục sửa</button></div>`);
-            const close = result => { overlay.remove(); resolve(result); };
-            overlay.querySelector('[data-cancel]').onclick = () => close(false);
-            overlay.querySelector('[data-confirm]').onclick = () => close(true);
-            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        return confirmSwal({
+            title: 'Cảnh báo thay đổi nhóm biến thể',
+            text: `Nhóm "${group.group_name}" đang được sử dụng bởi ${productsCount} sản phẩm. Việc đổi tên hoặc mã nhóm sẽ hiển thị trên tất cả sản phẩm đang sử dụng nhóm này. Bạn có muốn tiếp tục?`,
+            icon: 'warning',
+            confirmButtonText: 'Tiếp tục sửa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#377dff'
         });
     }
 
     function confirmRemoveProductGroup(group) {
-        return new Promise(resolve => {
-            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa nhóm biến thể khỏi sản phẩm?</h3><p>Nhóm <strong>${esc(group.group_name)}</strong> và các giá trị riêng sẽ bị xóa khỏi sản phẩm này.</p></div></div><div class="cms-alert">Thao tác được thực hiện ngay, không cần nhấn “Lưu thay đổi”.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
-            const close = result => { overlay.remove(); resolve(result); };
-            overlay.querySelector('[data-cancel]').onclick = () => close(false);
-            overlay.querySelector('[data-confirm]').onclick = () => close(true);
-            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        return confirmSwal({
+            title: 'Xóa nhóm biến thể khỏi sản phẩm?',
+            text: `Nhóm "${group.group_name}" và các giá trị riêng sẽ bị xóa khỏi sản phẩm này. Thao tác được thực hiện ngay lập tức.`,
+            icon: 'warning',
+            confirmButtonText: 'Đồng ý xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#ed4c78'
         });
     }
 
     function confirmRemoveVariantOption(optionName) {
-        return new Promise(resolve => {
-            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa giá trị biến thể?</h3><p>Giá trị <strong>${esc(optionName || 'này')}</strong> sẽ bị xóa khỏi sản phẩm.</p></div></div><div class="cms-alert">Thao tác được thực hiện ngay, không cần nhấn “Lưu thay đổi”.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
-            const close = result => { overlay.remove(); resolve(result); };
-            overlay.querySelector('[data-cancel]').onclick = () => close(false);
-            overlay.querySelector('[data-confirm]').onclick = () => close(true);
-            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        return confirmSwal({
+            title: 'Xóa giá trị biến thể?',
+            text: `Giá trị "${optionName || 'này'}" sẽ bị xóa khỏi sản phẩm này. Thao tác được thực hiện ngay lập tức.`,
+            icon: 'warning',
+            confirmButtonText: 'Đồng ý xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#ed4c78'
         });
     }
 
     function confirmRemoveStoredFile(fileName) {
-        return new Promise(resolve => {
-            const overlay = modalShell(`<div class="cms-modal-head"><div class="warning-icon">!</div><div><h3>Xóa file đã lưu?</h3><p>File <strong>${esc(fileName)}</strong> sẽ bị xóa khỏi dữ liệu và bộ nhớ lưu trữ.</p></div></div><div class="cms-alert">Thao tác này được thực hiện ngay và không cần lưu lại form.</div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="button" class="btn danger" data-confirm>Xóa</button></div>`);
-            const close = result => { overlay.remove(); resolve(result); };
-            overlay.querySelector('[data-cancel]').onclick = () => close(false);
-            overlay.querySelector('[data-confirm]').onclick = () => close(true);
-            overlay.onclick = event => { if (event.target === overlay) close(false); };
+        return confirmSwal({
+            title: 'Xóa file đã lưu?',
+            text: `File "${fileName}" sẽ bị xóa vĩnh viễn khỏi dữ liệu và bộ nhớ lưu trữ. Thao tác này không thể khôi phục.`,
+            icon: 'warning',
+            confirmButtonText: 'Đồng ý xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#ed4c78'
         });
     }
 
     function groupFormModal(group = null) {
         return new Promise(resolve => {
             const editing = !!group;
-            const overlay = modalShell(`<form class="cms-group-form"><div class="cms-modal-title"><h3>${editing ? 'Sửa' : 'Thêm mới'} nhóm biến thể</h3><button type="button" class="modal-close" data-cancel>×</button></div><div class="cms-modal-body"><div class="field"><label>Mã nhóm biến thể</label><input class="input" name="group_code" value="${esc(group?.group_code || '')}" placeholder="Ví dụ: color" required></div><div class="field"><label>Tên nhóm biến thể</label><input class="input" name="group_name" value="${esc(group?.group_name || '')}" placeholder="Ví dụ: Màu sắc" required></div><div class="form-error" data-modal-error></div></div><div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Hủy</button><button type="submit" class="btn primary">${editing ? 'Lưu thay đổi' : 'Thêm nhóm'}</button></div></form>`);
+            const overlay = modalShell(`<form class="cms-group-form"><div class="cms-modal-title border-bottom bg-light p-3 d-flex align-items-center justify-content-between"><h3 class="font-weight-bold text-dark mb-0 h4"><i class="tio-edit text-primary mr-2"></i>${editing ? 'Sửa' : 'Thêm mới'} nhóm biến thể</h3><button type="button" class="modal-close btn btn-xs btn-ghost-secondary" data-cancel aria-label="Đóng"><i class="tio-clear" style="font-size: 20px;"></i></button></div><div class="cms-modal-body p-4"><div class="form-group mb-3"><label class="title-color font-weight-bold mb-2">Mã nhóm biến thể</label><input class="form-control" name="group_code" value="${esc(group?.group_code || '')}" placeholder="Ví dụ: color, size" required></div><div class="form-group mb-3"><label class="title-color font-weight-bold mb-2">Tên nhóm biến thể</label><input class="form-control" name="group_name" value="${esc(group?.group_name || '')}" placeholder="Ví dụ: Màu sắc, Kích thước" required></div><div class="form-error text-danger font-weight-bold small" data-modal-error></div></div><div class="cms-modal-actions bg-light border-top p-3 d-flex justify-content-end"><button type="button" class="btn btn-secondary btn-sm px-4 mr-2 action-cancel" data-cancel>Hủy</button><button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm action-save">${editing ? 'Lưu thay đổi' : 'Thêm nhóm'}</button></div></form>`);
             const form = overlay.querySelector('form');
             const close = result => { overlay.remove(); resolve(result); };
             overlay.querySelectorAll('[data-cancel]').forEach(button => button.onclick = () => close(null));
-            overlay.onclick = event => { if (event.target === overlay) close(null); };
             form.onsubmit = async event => {
                 event.preventDefault();
                 const button = form.querySelector('button[type="submit"]');
@@ -489,21 +675,9 @@ window.CMS = (() => {
 
     function renderGroupPicker(picker, groups, state = new Map()) {
         picker._groups = groups;
-        picker.innerHTML = groups.length ? `<div class="relation-toolbar"><div class="relation-search-wrap"><span>⌕</span><input class="input relation-search" type="search" placeholder="Nhập tên hoặc mã nhóm để tìm..." data-group-search autocomplete="off"></div><div class="relation-toolbar-actions"><span class="selected-count" data-selected-count>Đã chọn 0 nhóm</span><button type="button" class="btn primary compact" data-add-group>＋ Thêm nhóm</button></div></div><div class="group-search-results" data-group-search-results hidden><div class="group-list-title">Kết quả tìm kiếm</div><div data-group-list>${groups.map(group => `<div class="relation-row" data-group-id="${group.id}" data-search-text="${esc(`${group.group_name} ${group.group_code}`.toLowerCase())}"><div class="relation-main"><button type="button" class="group-drag" draggable="true" title="Kéo để đổi thứ tự nhóm" aria-label="Kéo để đổi thứ tự nhóm">⠿</button><input type="checkbox" data-group-check value="${group.id}" hidden><span><strong data-group-name>${esc(group.group_name)}</strong><small data-group-code>${esc(group.group_code)}</small></span></div><label class="required-control">Bắt buộc <input type="checkbox" data-required disabled></label><label class="group-order-control">Thứ tự trong sản phẩm <input class="input relation-order" type="number" min="0" value="" placeholder="Tự động" disabled></label><div class="group-row-actions"><button type="button" class="btn compact select-group" data-select-group>＋ Chọn</button><button type="button" class="btn compact edit-group" data-edit-group="${group.id}">Sửa</button><button type="button" class="btn compact remove-group" data-remove-group title="Gỡ nhóm khỏi sản phẩm" aria-label="Gỡ nhóm khỏi sản phẩm">🗑</button></div><div class="product-options" data-product-options hidden><div class="product-options-head"><strong>Giá trị riêng của sản phẩm</strong><button type="button" class="btn compact" data-add-option>＋ Thêm giá trị</button></div><div data-option-rows></div></div></div>`).join('')}</div><div class="relation-no-result" data-no-result hidden>Không tìm thấy nhóm biến thể phù hợp.</div></div><div class="selected-groups-section"><div class="group-list-title">Nhóm biến thể đã chọn</div><div data-selected-group-list></div><div class="selected-groups-empty" data-selected-empty>Chưa chọn nhóm biến thể nào. Hãy tìm kiếm và chọn nhóm muốn sử dụng.</div></div>` : `<div class="relation-toolbar"><span>Chưa có nhóm biến thể.</span><button type="button" class="btn primary compact" data-add-group>＋ Thêm nhóm đầu tiên</button></div>`;
+        picker.innerHTML = groups.length ? `<div class="card border mb-3 shadow-none"><div class="card-header bg-light p-3 d-flex flex-wrap align-items-center justify-content-between gap-2"><div class="input-group input-group-merge input-group-flush border rounded bg-white" style="max-width: 380px;"><div class="input-group-prepend"><div class="input-group-text"><i class="tio-search"></i></div></div><input class="form-control form-control-sm relation-search border-0" type="search" placeholder="Nhập tên hoặc mã nhóm để tìm..." data-group-search autocomplete="off"></div><div class="d-flex align-items-center gap-2"><span class="badge badge-soft-info p-2 font-weight-bold" data-selected-count>Đã chọn 0 nhóm</span><button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm" data-add-group><i class="tio-add mr-1"></i> Thêm nhóm mới</button></div></div><div class="card-body p-3"><div class="group-search-results border rounded bg-white p-3 mb-3" data-group-search-results hidden><div class="font-weight-bold text-muted text-uppercase small mb-2">Kết quả tìm kiếm nhóm biến thể</div><div data-group-list>${groups.map(group => `<div class="relation-row card border p-3 mb-2" data-group-id="${group.id}" data-search-text="${esc(`${group.group_name} ${group.group_code}`.toLowerCase())}"><div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2"><div class="relation-main d-flex align-items-center gap-2"><button type="button" class="btn btn-xs btn-ghost-secondary group-drag p-0 mr-1" draggable="true" title="Kéo để đổi thứ tự" aria-label="Kéo để đổi thứ tự"><i class="tio-move-page" style="font-size:16px;"></i></button><input type="checkbox" data-group-check value="${group.id}" hidden><div><strong class="h5 mb-0 font-weight-bold text-dark" data-group-name>${esc(group.group_name)}</strong><span class="badge badge-soft-secondary ml-2" data-group-code>${esc(group.group_code)}</span></div></div><div class="d-flex align-items-center gap-3"><input class="relation-order" type="hidden" value=""><label class="form-check-label d-inline-flex align-items-center small font-weight-bold text-muted cursor-pointer mr-3 mb-0"><input type="checkbox" class="form-check-input mr-1" data-required disabled style="width:16px;height:16px;cursor:pointer;"> Bắt buộc</label><div class="group-row-actions d-flex gap-1 ml-2"><button type="button" class="btn btn-soft-primary btn-sm px-3 select-group" data-select-group><i class="tio-add mr-1"></i> Chọn</button><button type="button" class="btn btn-outline-info btn-sm square-btn edit-group" data-edit-group="${group.id}" title="Sửa"><i class="tio-edit"></i></button><button type="button" class="btn btn-outline-danger btn-sm square-btn remove-group" data-remove-group title="Xóa"><i class="tio-delete"></i></button></div></div></div><div class="product-options border-top pt-3 mt-2" data-product-options hidden><div class="product-options-head d-flex align-items-center justify-content-between mb-3"><strong class="font-weight-bold text-primary"><i class="tio-layers-outlined mr-1"></i> Giá trị của biến thể</strong><button type="button" class="btn btn-soft-primary btn-xs px-3" data-add-option><i class="tio-add mr-1"></i> Thêm giá trị</button></div><div class="d-flex flex-column gap-2" data-option-rows></div></div></div>`).join('')}</div><div class="relation-no-result text-muted text-center py-3" data-no-result hidden>Không tìm thấy nhóm biến thể phù hợp.</div></div><div class="selected-groups-section"><div class="font-weight-bold text-dark mb-2"><i class="tio-folder-special-outlined text-primary mr-1"></i> Nhóm biến thể đã chọn cho sản phẩm</div><div data-selected-group-list></div><div class="selected-groups-empty text-muted text-center py-4 border rounded bg-light" data-selected-empty><i class="tio-info-outined mr-1"></i> Chưa chọn nhóm biến thể nào. Hãy gõ tìm kiếm và nhấn "+ Chọn" nhóm muốn áp dụng.</div></div></div></div>` : `<div class="card border p-4 text-center"><p class="text-muted mb-3">Chưa có nhóm biến thể nào trong hệ thống.</p><div><button type="button" class="btn btn-primary btn-sm px-4 shadow-sm" data-add-group><i class="tio-add mr-1"></i> Thêm nhóm đầu tiên</button></div></div>`;
         setupGroupPicker(picker);
         picker.querySelectorAll('.product-options-head strong').forEach(title => title.textContent = 'Giá trị của biến thể');
-        picker.querySelectorAll('[data-edit-group]').forEach(button => {
-            button.classList.add('icon-button');
-            button.title = 'Sửa nhóm biến thể';
-            button.setAttribute('aria-label', 'Sửa nhóm biến thể');
-            button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
-        });
-        picker.querySelectorAll('[data-remove-group]').forEach(button => {
-            button.classList.add('icon-button', 'danger-icon');
-            button.title = 'Xóa nhóm khỏi sản phẩm';
-            button.setAttribute('aria-label', 'Xóa nhóm khỏi sản phẩm');
-            button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
-        });
         state.forEach((value, id) => {
             const row = picker.querySelector(`[data-group-id="${id}"]`);
             if (!row) return;
@@ -540,14 +714,15 @@ window.CMS = (() => {
 
     function addProductOptionRow(row, option = {}) {
         const container = row.querySelector('[data-option-rows]');
+        const uniqueId = `opt-${Date.now()}-${Math.floor(Math.random()*1000)}`;
         const element = document.createElement('div');
-        element.className = 'product-option-row';
-        element.innerHTML = `<button type="button" class="option-drag" draggable="true" title="Kéo để thay đổi thứ tự" aria-label="Kéo để thay đổi thứ tự">⠿</button><input type="hidden" data-option-field="id" value="${esc(option.id || '')}"><input type="hidden" data-option-field="sort_order" value="${option.sort_order ?? container.children.length}"><input class="input" data-option-field="option_code" value="${esc(option.option_code || '')}" placeholder="Mã, ví dụ: s" required><input class="input" data-option-field="option_name" value="${esc(option.option_name || '')}" placeholder="Tên, ví dụ: S" required><label class="option-active"><input type="checkbox" data-option-field="is_active" ${option.is_active === false ? '' : 'checked'}> Hoạt động</label><div class="option-row-actions"><button type="button" class="btn compact save-option">Lưu</button><button type="button" class="btn compact remove-option">Xóa</button></div>`;
+        element.className = 'product-option-row card p-2 mb-2 bg-white border';
+        element.innerHTML = `<div class="d-flex flex-wrap align-items-center justify-content-between gap-2"><div class="d-flex align-items-center gap-2 flex-grow-1"><button type="button" class="btn btn-xs btn-ghost-secondary option-drag p-0 mr-1" draggable="true" title="Kéo đổi thứ tự" aria-label="Kéo đổi thứ tự"><i class="tio-move-page" style="font-size:14px;"></i></button><input type="hidden" data-option-field="id" value="${esc(option.id || '')}"><input type="hidden" data-option-field="sort_order" value="${option.sort_order ?? container.children.length}"><div class="row g-2 flex-grow-1"><div class="col-sm-5"><input class="form-control form-control-sm" data-option-field="option_code" value="${esc(option.option_code || '')}" placeholder="Mã biến thể (VD: S, Red)" required></div><div class="col-sm-6"><input class="form-control form-control-sm" data-option-field="option_name" value="${esc(option.option_name || '')}" placeholder="Tên biến thể (VD: Size S, Màu Đỏ)" required></div></div></div><div class="d-flex align-items-center gap-2"><label class="form-check-label d-inline-flex align-items-center small font-weight-bold text-dark cursor-pointer mr-3 mb-0"><input type="checkbox" class="form-check-input mr-1" id="${uniqueId}" data-option-field="is_active" ${option.is_active === false ? '' : 'checked'} style="width:16px;height:16px;cursor:pointer;"> Hoạt động</label><div class="option-row-actions d-flex gap-1"><button type="button" class="btn btn-soft-primary btn-sm px-3 save-option action-save">Lưu</button><button type="button" class="btn btn-outline-danger btn-sm square-btn remove-option" title="Xóa giá trị"><i class="tio-delete"></i></button></div></div></div>`;
         const removeButton = element.querySelector('.remove-option');
-        removeButton.classList.add('icon-button', 'danger-icon');
+        removeButton.className = 'btn btn-outline-danger btn-sm square-btn remove-option';
         removeButton.title = 'Xóa giá trị biến thể';
         removeButton.setAttribute('aria-label', 'Xóa giá trị biến thể');
-        removeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        removeButton.innerHTML = '<i class="tio-delete"></i>';
         element.querySelector('.save-option').onclick = async event => {
             const configurationId = row.dataset.configurationId;
             if (!configurationId) {
@@ -660,41 +835,64 @@ window.CMS = (() => {
     }
 
     function setupCategoryPicker(picker, categories) {
-        const choice = picker.querySelector('[data-category-choice]');
+        const searchInput = picker.querySelector('[data-category-search]');
+        const results = picker.querySelector('[data-category-results]');
         const list = picker.querySelector('[data-category-selected]');
         const inputs = picker.querySelector('[data-category-inputs]');
         let selected = [];
 
-        const render = () => {
-            const selectedIds = new Set(selected.map(item => String(item.id)));
-            choice.innerHTML = `<option value="">${esc(choice.dataset.placeholder || '-- Chọn danh mục để thêm --')}</option>` + categories
-                .filter(item => !selectedIds.has(String(item[picker.dataset.value])))
-                .map(item => `<option value="${item[picker.dataset.value]}">${esc(item[picker.dataset.text])}</option>`).join('');
-            list.innerHTML = selected.length ? selected.map(item => `<div class="category-chip" data-category-id="${item.id}"><span>${esc(item.category_name)}</span><button type="button" class="category-chip-remove" data-remove-category="${item.id}" title="Gỡ danh mục" aria-label="Gỡ danh mục"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`).join('') : '<div class="category-empty">Chưa chọn danh mục nào.</div>';
+        const close = () => { results.hidden = true; };
+        const renderSelected = () => {
+            list.innerHTML = selected.length ? selected.map(item => `<div class="category-chip" data-category-id="${item.id}"><span>${esc(item.label)}</span><button type="button" class="category-chip-remove" data-remove-category="${item.id}" title="Gỡ mục đã chọn" aria-label="Gỡ ${esc(item.label)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`).join('') : '<div class="category-empty">Chưa chọn mục nào.</div>';
             inputs.innerHTML = selected.map(item => `<input type="hidden" name="${esc(picker.dataset.name)}[]" value="${item.id}">`).join('');
             list.querySelectorAll('[data-remove-category]').forEach(button => button.onclick = () => {
                 selected = selected.filter(item => String(item.id) !== button.dataset.removeCategory);
-                render();
+                renderSelected();
+                filter();
             });
         };
-
-        choice.onchange = () => {
-            if (!choice.value) return;
-            const category = categories.find(item => String(item[picker.dataset.value]) === choice.value);
-            if (category) selected.push({id: category[picker.dataset.value], category_name: category[picker.dataset.text]});
-            render();
+        const filter = () => {
+            const keyword = searchInput.value.trim().toLowerCase();
+            const selectedIds = new Set(selected.map(item => String(item.id)));
+            const matches = categories.filter(item => {
+                const id = String(item[picker.dataset.value]);
+                const label = String(item[picker.dataset.text] ?? '');
+                return !selectedIds.has(id) && (!keyword || label.toLowerCase().includes(keyword));
+            });
+            results.innerHTML = matches.length
+                ? matches.map(item => `<button type="button" class="category-search-option" data-category-option="${esc(item[picker.dataset.value])}">${esc(item[picker.dataset.text])}</button>`).join('')
+                : '<div class="category-search-empty">Không tìm thấy kết quả phù hợp.</div>';
+            results.hidden = false;
+            results.querySelectorAll('[data-category-option]').forEach(button => button.onclick = () => {
+                const item = categories.find(candidate => String(candidate[picker.dataset.value]) === button.dataset.categoryOption);
+                if (!item) return;
+                selected.push({id: item[picker.dataset.value], label: item[picker.dataset.text]});
+                searchInput.value = '';
+                renderSelected();
+                searchInput.focus();
+                close();
+            });
         };
+        searchInput.addEventListener('input', filter);
+        searchInput.addEventListener('focus', filter);
+        searchInput.addEventListener('click', () => { if (results.hidden) filter(); });
+        document.addEventListener('click', event => { if (!picker.contains(event.target)) close(); });
         picker._setSelected = items => {
-            selected = items.map(item => ({id: item.id, category_name: item.category_name}));
-            render();
+            selected = items.map(item => ({
+                id: item[picker.dataset.value] ?? item.id,
+                label: item[picker.dataset.text] ?? item.category_name ?? item.name ?? '',
+            }));
+            renderSelected();
         };
-        render();
+        renderSelected();
     }
 
     function setupSearchableSelect(picker) {
         const input = picker.querySelector('[data-searchable-input]');
         const hidden = picker.querySelector('input[type="hidden"]');
         const results = picker.querySelector('[data-searchable-results]');
+        const simple = picker.dataset.searchVariant === 'simple';
+        const fieldLabel = (picker.dataset.label || 'mục').toLowerCase();
         let timer;
         let sequence = 0;
 
@@ -702,13 +900,18 @@ window.CMS = (() => {
         const select = (id, label, notify = true) => {
             hidden.value = id ?? '';
             input.value = label ?? '';
-            input.setCustomValidity(hidden.value ? '' : 'Vui lòng chọn sản phẩm trong danh sách.');
+            input.setCustomValidity(!input.required || hidden.value ? '' : `Vui lòng chọn ${fieldLabel} trong danh sách.`);
             close();
             if (notify) hidden.dispatchEvent(new Event('change', {bubbles: true}));
         };
         const render = items => {
-            results.innerHTML = items.length
-                ? items.map(item => {
+            if (simple) {
+                results.innerHTML = items.length
+                    ? items.map(item => `<button type="button" class="searchable-select-option simple-search-option" data-id="${esc(item[picker.dataset.value])}">${esc(item[picker.dataset.text])}</button>`).join('')
+                    : `<div class="searchable-select-empty">Không tìm thấy ${esc(fieldLabel)} phù hợp.</div>`;
+            } else {
+                results.innerHTML = items.length
+                    ? items.map(item => {
                     const image = Array.isArray(item.images) ? item.images[0] : null;
                     const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
                     const imageUrl = image?.external_url || (image?.path ? `${storage}/${String(image.path).replace(/^\//, '')}` : '');
@@ -724,8 +927,9 @@ window.CMS = (() => {
                             <span class="badge ${item.is_featured ? 'featured' : ''}">${item.is_featured ? 'Nổi bật' : 'Không nổi bật'}</span>
                         </span>
                     </button>`;
-                }).join('')
-                : '<div class="searchable-select-empty">Không tìm thấy sản phẩm phù hợp.</div>';
+                    }).join('')
+                    : '<div class="searchable-select-empty">Không tìm thấy sản phẩm phù hợp.</div>';
+            }
             results.hidden = false;
             results.querySelectorAll('[data-id]').forEach((button, index) => {
                 button.onclick = () => select(items[index][picker.dataset.value], items[index][picker.dataset.text]);
@@ -733,7 +937,7 @@ window.CMS = (() => {
         };
         const search = async keyword => {
             const current = ++sequence;
-            results.innerHTML = '<div class="searchable-select-empty">Đang tìm sản phẩm...</div>';
+            results.innerHTML = `<div class="searchable-select-empty">Đang tìm ${esc(fieldLabel)}...</div>`;
             results.hidden = false;
             try {
                 const query = new URLSearchParams({search: keyword, per_page: '20'});
@@ -747,14 +951,19 @@ window.CMS = (() => {
 
         input.addEventListener('input', () => {
             hidden.value = '';
-            input.setCustomValidity('Vui lòng chọn sản phẩm trong danh sách.');
+            input.setCustomValidity(input.required ? `Vui lòng chọn ${fieldLabel} trong danh sách.` : '');
             clearTimeout(timer);
             const keyword = input.value.trim();
-            if (!keyword) return close();
             timer = setTimeout(() => search(keyword).catch(error => toast(error.message, true)), 250);
         });
         input.addEventListener('focus', () => {
-            if (input.value.trim() && !hidden.value) search(input.value.trim()).catch(error => toast(error.message, true));
+            const keyword = hidden.value ? '' : input.value.trim();
+            search(keyword).catch(error => toast(error.message, true));
+        });
+        input.addEventListener('click', () => {
+            if (!results.hidden) return;
+            const keyword = hidden.value ? '' : input.value.trim();
+            search(keyword).catch(error => toast(error.message, true));
         });
         document.addEventListener('click', event => { if (!picker.contains(event.target)) close(); });
         picker._setValue = (id, label) => select(id, label, false);
@@ -804,13 +1013,59 @@ window.CMS = (() => {
         if (optionPicker) {
             const groupsHtml = configurations.length ? configurations.map(configuration => {
                 const options = (configuration.options || []).filter(option => option.is_active !== false);
-                const requiredBadge = configuration.is_required ? '<span class="required-badge">Bắt buộc</span>' : '<span class="optional-badge">Không bắt buộc</span>';
-                const choices = options.map(option => `<label class="option-choice"><input type="radio" name="_variant_group_${configuration.id}" value="${option.id}" data-option-id data-option-code="${esc(option.option_code)}" ${configuration.is_required ? 'required' : ''}> <span>${esc(option.option_name)} <small>(${esc(option.option_code)})</small></span></label>`).join('');
-                const emptyChoice = configuration.is_required ? '' : `<label class="option-choice"><input type="radio" name="_variant_group_${configuration.id}" value="" checked> <span>Không chọn</span></label>`;
-                return `<fieldset class="option-group" data-required="${configuration.is_required ? '1' : '0'}"><legend><span>${esc(configuration.group_name)}</span>${requiredBadge}</legend>${options.length ? emptyChoice + choices : '<div class="option-group-empty">Nhóm này chưa có giá trị hoạt động.</div>'}</fieldset>`;
-            }).join('') : '<div class="relation-loading">Sản phẩm chưa cấu hình nhóm biến thể.</div>';
+                const requiredBadge = configuration.is_required
+                    ? '<span class="badge badge-soft-danger ml-2 font-weight-bold"><i class="tio-asterisk mr-1"></i>Bắt buộc</span>'
+                    : '<span class="badge badge-soft-secondary ml-2">Không bắt buộc</span>';
+                
+                const choices = options.map(option => `
+                    <label class="btn btn-outline-primary btn-sm option-choice mb-2 mr-2 border rounded p-2 d-inline-flex align-items-center cursor-pointer shadow-none">
+                        <input type="radio" class="mr-2" name="_variant_group_${configuration.id}" value="${option.id}" data-option-id data-option-code="${esc(option.option_code)}" ${configuration.is_required ? 'required' : ''}>
+                        <span class="font-weight-bold text-dark">${esc(option.option_name)}</span>
+                        <span class="text-muted small ml-1">(${esc(option.option_code)})</span>
+                    </label>`).join('');
+                
+                const emptyChoice = configuration.is_required ? '' : `
+                    <label class="btn btn-outline-secondary btn-sm option-choice mb-2 mr-2 border rounded p-2 d-inline-flex align-items-center cursor-pointer shadow-none">
+                        <input type="radio" class="mr-2" name="_variant_group_${configuration.id}" value="" checked>
+                        <span class="text-muted">Không chọn</span>
+                    </label>`;
+                
+                return `
+                    <div class="card mb-3 border shadow-none option-group" data-required="${configuration.is_required ? '1' : '0'}">
+                        <div class="card-header bg-light py-2 px-3 d-flex align-items-center">
+                            <h5 class="mb-0 font-weight-bold text-dark d-flex align-items-center">
+                                <i class="tio-layers-outlined text-primary mr-2"></i> ${esc(configuration.group_name)}
+                                ${requiredBadge}
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-wrap align-items-center">
+                                ${options.length ? emptyChoice + choices : '<div class="text-muted small py-2">Nhóm này chưa có giá trị hoạt động.</div>'}
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('') : '<div class="relation-loading text-muted text-center py-4">Sản phẩm chưa cấu hình nhóm biến thể.</div>';
+            
             optionPicker.innerHTML = configurations.length
-                ? `<div class="variant-option-toolbar"><span>Chọn giá trị cho từng nhóm biến thể</span><button type="button" class="btn compact" data-reset-variant-options>↻ Đặt lại giá trị</button></div>${groupsHtml}${form.dataset.recordId ? '' : '<label class="generate-combinations"><input type="checkbox" name="generate_all_combinations" value="1" data-generate-combinations> <span><strong>Tạo tất cả tổ hợp biến thể</strong><small>Tự động tạo một biến thể cho mỗi tổ hợp từ các giá trị đang hoạt động.</small></span></label>'}`
+                ? `<div class="card border mb-3 shadow-none">
+                    <div class="card-header bg-light p-3 d-flex align-items-center justify-content-between">
+                        <span class="font-weight-bold text-dark"><i class="tio-tune mr-1 text-primary"></i> Chọn giá trị cho từng nhóm biến thể</span>
+                        <button type="button" class="btn btn-outline-secondary btn-xs px-3" data-reset-variant-options>
+                            <i class="tio-refresh mr-1"></i> Đặt lại giá trị
+                        </button>
+                    </div>
+                   </div>
+                   ${groupsHtml}
+                   ${form.dataset.recordId ? '' : `
+                    <div class="card border border-info bg-soft-info p-3 mb-3">
+                        <label class="custom-control custom-checkbox d-flex align-items-center mb-0 cursor-pointer">
+                            <input type="checkbox" class="custom-control-input" name="generate_all_combinations" value="1" data-generate-combinations>
+                            <span class="custom-control-label font-weight-bold text-dark" style="padding-top: 2px;">
+                                <strong>Tạo tất cả tổ hợp biến thể</strong>
+                                <small class="text-muted d-block font-weight-normal mt-1">Tự động tạo một biến thể cho mỗi tổ hợp từ các giá trị đang hoạt động.</small>
+                            </span>
+                        </label>
+                    </div>`}`
                 : groupsHtml;
             optionPicker.onchange = event => {
                 if (event.target.matches('input[type="radio"]')) suggestVariantSku(form);
@@ -889,13 +1144,18 @@ window.CMS = (() => {
         const noResult = picker.querySelector('[data-no-result]');
         const searchInput = picker.querySelector('[data-group-search]');
         const searchResults = picker.querySelector('[data-group-search-results]');
-        const searchToolbar = picker.querySelector('.relation-toolbar');
+        const searchToolbar = picker.querySelector('.card-header');
         const availableList = picker.querySelector('[data-group-list]');
         const selectedList = picker.querySelector('[data-selected-group-list]');
         const selectedEmpty = picker.querySelector('[data-selected-empty]');
         rows.forEach(row => {
+            row.setAttribute('role', 'option');
+            row.setAttribute('tabindex', '0');
             const orderInput = row.querySelector('.relation-order');
-            orderInput.type = 'hidden';
+            if (orderInput) {
+                orderInput.type = 'hidden';
+                orderInput.closest('.d-flex')?.classList.add('d-none');
+            }
         });
         const update = () => {
             const selected = rows.filter(row => row.querySelector('[data-group-check]').checked);
@@ -904,9 +1164,13 @@ window.CMS = (() => {
                 const checked = row.querySelector('[data-group-check]').checked;
                 if (!checked) availableList?.appendChild(row);
                 row.classList.toggle('selected', checked);
+                row.setAttribute('aria-selected', checked ? 'true' : 'false');
+                row.tabIndex = checked ? -1 : 0;
                 row.querySelector('[data-required]').disabled = !checked;
                 row.querySelector('.relation-order').disabled = !checked;
                 row.querySelector('[data-product-options]').hidden = !checked;
+                const selectBtn = row.querySelector('[data-select-group]');
+                if (selectBtn) selectBtn.hidden = checked;
                 if (!checked) row.querySelector('[data-required]').checked = false;
             });
             selected
@@ -934,7 +1198,19 @@ window.CMS = (() => {
                 const checkbox = row.querySelector('[data-group-check]');
                 checkbox.checked = true;
                 checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+                if (searchInput) searchInput.value = '';
+                if (searchResults) searchResults.hidden = true;
             });
+            const selectFromDropdown = event => {
+                if (row.parentElement !== availableList || row.querySelector('[data-group-check]').checked) return;
+                if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+                if (event.target.closest('button, input, label')) return;
+                event.preventDefault();
+                row.querySelector('[data-select-group]')?.click();
+                searchInput?.focus();
+            };
+            row.addEventListener('click', selectFromDropdown);
+            row.addEventListener('keydown', selectFromDropdown);
             row.querySelector('[data-remove-group]')?.addEventListener('click', async event => {
                 const removeButton = event.currentTarget;
                 const checkbox = row.querySelector('[data-group-check]');
@@ -1028,7 +1304,9 @@ window.CMS = (() => {
         };
         searchInput?.addEventListener('input', filterGroupSearch);
         document.addEventListener('click', event => {
-            if (!picker.contains(event.target) && searchResults) searchResults.hidden = true;
+            if (!searchResults || searchResults.hidden) return;
+            if (event.target === searchInput || searchResults.contains(event.target)) return;
+            searchResults.hidden = true;
         });
         searchInput?.addEventListener('focus', filterGroupSearch);
         picker._updateSelection = update;
@@ -1050,7 +1328,7 @@ window.CMS = (() => {
             const addRow = (key = '', value = '') => {
                 const row = document.createElement('div');
                 row.className = 'key-value-row';
-                row.innerHTML = `<input class="input" data-key-value-key placeholder="${esc(editor.dataset.keyPlaceholder)}" value="${esc(key)}"><input class="input" type="url" data-key-value-value placeholder="${esc(editor.dataset.valuePlaceholder)}" value="${esc(value)}"><button type="button" class="btn icon-button danger-icon" data-remove-key-value title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button>`;
+                row.innerHTML = `<input class="form-control" data-key-value-key placeholder="${esc(editor.dataset.keyPlaceholder)}" value="${esc(key)}"><input class="form-control" type="url" data-key-value-value placeholder="${esc(editor.dataset.valuePlaceholder)}" value="${esc(value)}"><button type="button" class="btn btn-outline-danger border btn-sm d-flex align-items-center justify-content-center" style="width:42px;height:42px;border-radius:8px;flex-shrink:0;" data-remove-key-value title="Xóa" aria-label="Xóa"><i class="ri-delete-bin-line font-weight-bold" style="font-size:18px;"></i></button>`;
                 row.querySelector('[data-remove-key-value]').onclick = () => { row.remove(); refreshEmpty(); };
                 rows.appendChild(row);
                 refreshEmpty();
@@ -1087,7 +1365,7 @@ window.CMS = (() => {
             const addRow = (value = '') => {
                 const row = document.createElement('div');
                 row.className = 'repeatable-row';
-                row.innerHTML = `<input class="input" data-repeatable-value maxlength="255" placeholder="${esc(editor.dataset.placeholder)}" value="${esc(value)}"><button type="button" class="btn icon-button danger-icon" data-remove-repeatable title="Xóa" aria-label="Xóa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button>`;
+                row.innerHTML = `<input class="form-control" data-repeatable-value maxlength="255" placeholder="${esc(editor.dataset.placeholder)}" value="${esc(value)}"><button type="button" class="btn btn-outline-danger border btn-sm d-flex align-items-center justify-content-center" style="width:42px;height:42px;border-radius:8px;flex-shrink:0;" data-remove-repeatable title="Xóa" aria-label="Xóa"><i class="ri-delete-bin-line font-weight-bold" style="font-size:18px;"></i></button>`;
                 row.querySelector('[data-remove-repeatable]').onclick = () => { row.remove(); refreshEmpty(); };
                 rows.appendChild(row);
                 refreshEmpty();
@@ -1120,14 +1398,30 @@ window.CMS = (() => {
             else if (input.dataset.type === 'lines' && Array.isArray(value)) input.value = value.join('\n');
             else input.value = value;
         });
+        form.querySelectorAll('[data-type="searchable_select_api"]').forEach(picker => {
+            const hidden = picker.querySelector('input[type="hidden"][name]');
+            if (!hidden || row[hidden.name] == null) return;
+            const selectedText = picker.dataset.selectedText;
+            const label = selectedText
+                ? row[selectedText]
+                : hidden.name === 'product_id'
+                    ? row.product_name
+                    : row[picker.dataset.text];
+            picker._setValue?.(row[hidden.name], label || `#${row[hidden.name]}`);
+        });
         if (row.product_id) {
-            form.querySelector('[data-type="searchable_select_api"]')?._setValue?.(row.product_id, row.product_name || `#${row.product_id}`);
             await loadProductContext(form, row.product_id);
             const groupSelect = form.querySelector('[data-type="product_group_select"]');
             if (groupSelect && row.product_variant_group_id) groupSelect.value = row.product_variant_group_id;
         }
-        const categoryPicker = form.querySelector('[data-type="multi_select_api"]');
-        if (categoryPicker) categoryPicker._setSelected?.(row.categories || []);
+        form.querySelectorAll('[data-type="multi_select_api"]').forEach(picker => {
+            const items = picker.dataset.name === 'category_ids'
+                ? row.categories
+                : picker.dataset.name === 'tag_ids'
+                    ? row.tags
+                    : row[picker.dataset.name];
+            picker._setSelected?.(items || []);
+        });
         const groupPicker = form.querySelector('[data-type="product_variant_groups"]');
         if (groupPicker) (row.variant_groups || []).forEach(selected => {
             const checkbox = groupPicker.querySelector(`[data-group-check][value="${selected.variant_group_id}"]`);
@@ -1217,17 +1511,23 @@ window.CMS = (() => {
         const grid = root.querySelector('[data-page-grid]');
         const count = root.querySelector('[data-page-count]');
         const searchInput = root.querySelector('[data-page-search]');
+        const perPage = Number(root.dataset.perPage) || 20;
+        const pagination = root.querySelector('[data-pagination]');
+        let currentPage = 1;
         let timer;
-        const documentIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 12h6M9 16h6"/></svg>';
-        const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
-        const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        const documentIcon = '<i class="ri-file-text-line"></i>';
+        const editIcon = '<i class="ri-edit-line"></i>';
+        const deleteIcon = '<i class="ri-delete-bin-line"></i>';
 
-        async function load(search = '') {
-            grid.innerHTML = '<div class="content-pages-state loading-state">Đang tải dữ liệu...</div>';
+        async function load(search = '', page = 1) {
+            grid.innerHTML = `<div class="content-pages-state loading-state">${loadingMarkup()}</div>`;
             try {
-                const params = new URLSearchParams({per_page: '50', search});
+                const params = new URLSearchParams({per_page: String(perPage), page: String(page), search});
                 const result = await request(`/${endpoint}?${params.toString()}`);
                 const rows = result.data || [];
+                const lastPage = Math.max(1, Number(result.meta?.last_page) || 1);
+                if (page > lastPage) return load(search, lastPage);
+                currentPage = Number(result.meta?.current_page) || page;
                 count.textContent = `${result.meta?.total ?? rows.length} trang`;
                 grid.innerHTML = rows.length ? rows.map(row => {
                     const slug = String(row.slug || '').replace(/^\/+/, '');
@@ -1257,9 +1557,10 @@ window.CMS = (() => {
                     try {
                         const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'});
                         toast(result.message || 'Đã xóa trang');
-                        await load(searchInput.value.trim());
+                        await load(searchInput.value.trim(), currentPage);
                     } catch (error) { toast(error.message, true); }
                 });
+                renderStandalonePagination(pagination, result.meta, nextPage => load(searchInput.value.trim(), nextPage), perPage);
             } catch (error) {
                 count.textContent = '0 trang';
                 grid.innerHTML = `<div class="content-pages-state">${esc(error.message)}</div>`;
@@ -1282,12 +1583,15 @@ window.CMS = (() => {
         const list = root.querySelector('[data-section-list]');
         const count = root.querySelector('[data-section-count]');
         const searchInput = root.querySelector('[data-section-search]');
+        const perPage = Number(root.dataset.perPage) || 20;
+        const pagination = root.querySelector('[data-pagination]');
         const storage = (document.body.dataset.storage || '/storage').replace(/\/$/, '');
         let timer;
+        let currentPage = 1;
         let currentSections = [];
 
-        const editIcon = '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
-        const deleteIcon = '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+        const editIcon = '<i class="tio-edit"></i>';
+        const deleteIcon = '<i class="tio-delete"></i>';
         const textOnly = value => {
             const element = document.createElement('div');
             element.innerHTML = String(value || '');
@@ -1299,21 +1603,30 @@ window.CMS = (() => {
             const creating = !!settings.create;
             const resourceEndpoint = itemMode ? 'section-items' : endpoint;
             const overlay = modalShell(`<form class="cms-section-form">
-                <div class="cms-modal-title"><h3>${creating ? 'Thêm' : 'Chỉnh sửa'} ${itemMode ? 'item' : 'section'}</h3><button type="button" class="modal-close" data-cancel aria-label="Đóng">×</button></div>
-                <div class="cms-modal-body section-modal-body">
+                <div class="cms-modal-title p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="font-weight-bold mb-0">${creating ? 'Thêm' : 'Chỉnh sửa'} ${itemMode ? 'nội dung item' : 'section'}</h5>
+                    <button type="button" class="modal-close border-0 bg-transparent text-muted h4 mb-0" data-cancel aria-label="Đóng"><i class="ri-close-line"></i></button>
+                </div>
+                <div class="cms-modal-body section-modal-body p-4">
                     <div class="section-modal-grid">
-                        <div class="field"><label>Tiêu đề</label><input class="input" name="title" value="${esc(section.title || '')}" placeholder="Nhập tiêu đề"></div>
-                        <div class="field"><label>Tiêu đề phụ</label><input class="input" name="subtitle" value="${esc(section.subtitle || '')}" placeholder="Nhập tiêu đề phụ"></div>
-                        <div class="field full"><label>Nội dung</label><textarea class="input" data-type="richtext" name="content" placeholder="Nhập nội dung section">${esc(section.content || '')}</textarea></div>
-                        <div class="field"><label>Thứ tự</label><input class="input" type="number" name="sort_order" value="${Number(section.sort_order || 0)}" min="0"></div>
+                        <div class="field"><label class="font-weight-semibold">Tiêu đề</label><input class="input form-control" name="title" value="${esc(section.title || '')}" placeholder="Nhập tiêu đề"></div>
+                        <div class="field"><label class="font-weight-semibold">Tiêu đề phụ</label><input class="input form-control" name="subtitle" value="${esc(section.subtitle || '')}" placeholder="Nhập tiêu đề phụ"></div>
+                        <div class="field full"><label class="font-weight-semibold">Nội dung</label><textarea class="input form-control" data-type="richtext" name="content" placeholder="Nhập nội dung section">${esc(section.content || '')}</textarea></div>
+                        <div class="field"><label class="font-weight-semibold">Thứ tự hiển thị</label><input class="input form-control" type="number" name="sort_order" value="${Number(section.sort_order || 0)}" min="0"></div>
                     </div>
-                    <div class="section-modal-media">
-                        <div class="section-modal-media-head"><div><strong>Media</strong><small>Ảnh JPG, PNG, GIF, WEBP; video sử dụng đường dẫn URL.</small></div><button type="button" class="btn primary" data-add-media>＋ Thêm media</button></div>
+                    <div class="section-modal-media mt-4 p-3 border rounded bg-light">
+                        <div class="section-modal-media-head d-flex align-items-center justify-content-between mb-3">
+                            <div><strong>Media</strong><small class="text-muted d-block">Ảnh JPG, PNG, GIF, WEBP; video sử dụng đường dẫn URL.</small></div>
+                            <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-add-media><i class="ri-add-line mr-1"></i> Thêm media</button>
+                        </div>
                         <div class="section-modal-files sortable-media" data-modal-files></div>
                     </div>
-                    <div class="form-error" data-modal-error></div>
+                    <div class="form-error text-danger font-weight-bold mt-2" data-modal-error></div>
                 </div>
-                <div class="cms-modal-actions"><button type="button" class="btn" data-cancel>Đóng</button><button type="submit" class="btn primary">Lưu</button></div>
+                <div class="cms-modal-actions p-3 border-top bg-light d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-4 mr-2" data-cancel>Đóng</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">Lưu thay đổi</button>
+                </div>
             </form>`);
             overlay.querySelector('.cms-modal').classList.add('section-edit-modal');
             const form = overlay.querySelector('form');
@@ -1340,8 +1653,8 @@ window.CMS = (() => {
                 filesBox.innerHTML = mediaRows.length ? mediaRows.map(row => `<div class="section-modal-file media-sort-row" draggable="true" data-media-key="${esc(row.key)}">
                     <button type="button" class="media-drag" title="Kéo để thay đổi thứ tự">⠿</button>
                     <span class="media-row-preview">${row.kind === 'image' && row.preview ? `<img src="${esc(row.preview)}" alt="">` : '<b>VIDEO</b>'}</span>
-                    <select class="input media-kind"><option value="image" ${row.kind === 'image' ? 'selected' : ''}>Hình ảnh</option><option value="video" ${row.kind === 'video' ? 'selected' : ''}>Video</option></select>
-                    ${row.kind === 'image' ? `<button type="button" class="input media-value choose-row-image" title="Chọn hình ảnh">${esc(row.value || 'Chọn hình ảnh')}</button>` : `<input class="input media-value media-video-url" type="url" value="${esc(row.value || '')}" placeholder="Nhập URL video">`}
+                    <select class="input form-control media-kind"><option value="image" ${row.kind === 'image' ? 'selected' : ''}>Hình ảnh</option><option value="video" ${row.kind === 'video' ? 'selected' : ''}>Video</option></select>
+                    ${row.kind === 'image' ? `<button type="button" class="input form-control media-value choose-row-image text-left" title="Chọn hình ảnh">${esc(row.value || 'Chọn hình ảnh')}</button>` : `<input class="input form-control media-value media-video-url" type="url" value="${esc(row.value || '')}" placeholder="Nhập URL video">`}
                     <button type="button" class="section-modal-file-delete" title="Xóa media">${deleteIcon}</button>
                 </div>`).join('') : '<div class="section-modal-media-empty">Chưa có media.</div>';
                 filesBox.querySelectorAll('[data-media-key]').forEach(element => {
@@ -1418,7 +1731,7 @@ window.CMS = (() => {
                     newImages.forEach((row, index) => { row.id = addedImages[index]?.id; });
                     newVideos.forEach((row, index) => { row.id = addedVideos[index]?.id; });
                     await Promise.all(mediaRows.filter(row => row.id).map((row, index) => request(`/files/${row.id}`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sort_order: index})})));
-                    await close(); toast(result.message || `Đã ${creating ? 'thêm' : 'cập nhật'} ${itemMode ? 'item' : 'section'}`); await load(searchInput.value.trim());
+                    await close(); toast(result.message || `Đã ${creating ? 'thêm' : 'cập nhật'} ${itemMode ? 'item' : 'section'}`); await load(searchInput.value.trim(), currentPage);
                 } catch (error) { errorBox.textContent = error.message; }
             };
         }
@@ -1456,16 +1769,20 @@ window.CMS = (() => {
             </article>`;
         };
 
-        async function load(search = '') {
-            list.innerHTML = '<div class="section-manager-state loading-state">Đang tải dữ liệu...</div>';
+        async function load(search = '', page = 1) {
+            list.innerHTML = `<div class="section-manager-state loading-state">${loadingMarkup()}</div>`;
             try {
-                const params = new URLSearchParams({per_page: '50', page_content_id: pageId, search});
+                const params = new URLSearchParams({per_page: String(perPage), page: String(page), page_content_id: pageId, search});
                 const result = await request(`/${endpoint}?${params.toString()}`);
                 const rows = result.data || [];
+                const lastPage = Math.max(1, Number(result.meta?.last_page) || 1);
+                if (page > lastPage) return load(search, lastPage);
+                currentPage = Number(result.meta?.current_page) || page;
                 currentSections = rows;
                 count.textContent = `${result.meta?.total ?? rows.length} section`;
-                list.innerHTML = rows.length ? rows.map(renderSection).join('') : '<div class="section-manager-state card">Chưa có section phù hợp.</div>';
+                list.innerHTML = rows.length ? rows.map((section, index) => renderSection(section, ((currentPage - 1) * perPage) + index)).join('') : '<div class="section-manager-state card">Chưa có section phù hợp.</div>';
                 bindActions(rows);
+                renderStandalonePagination(pagination, result.meta, nextPage => load(searchInput.value.trim(), nextPage), perPage);
                 if (location.hash) document.querySelector(location.hash)?.scrollIntoView({behavior: 'smooth', block: 'start'});
             } catch (error) { list.innerHTML = `<div class="section-manager-state card">${esc(error.message)}</div>`; }
         }
@@ -1486,12 +1803,12 @@ window.CMS = (() => {
             });
             list.querySelectorAll('.delete-section').forEach(button => button.onclick = async () => {
                 if (!confirm('Xóa section này sẽ xóa toàn bộ item bên trong. Bạn có chắc chắn?')) return;
-                try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa section'); load(searchInput.value.trim()); }
+                try { const result = await request(`/${endpoint}/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa section'); load(searchInput.value.trim(), currentPage); }
                 catch (error) { toast(error.message, true); }
             });
             list.querySelectorAll('.delete-item').forEach(button => button.onclick = async () => {
                 if (!confirm('Bạn chắc chắn muốn xóa item này?')) return;
-                try { const result = await request(`/section-items/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa item'); load(searchInput.value.trim()); }
+                try { const result = await request(`/section-items/${button.dataset.id}`, {method: 'DELETE'}); toast(result.message || 'Đã xóa item'); load(searchInput.value.trim(), currentPage); }
                 catch (error) { toast(error.message, true); }
             });
         }

@@ -33,6 +33,12 @@ class Product extends Model
             ->withTimestamps();
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Tags\Tag::class, 'product_tag')
+            ->withTimestamps();
+    }
+
     protected function casts(): array
     {
         return [

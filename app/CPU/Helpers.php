@@ -64,16 +64,20 @@ class Helpers
         return bin2hex(random_bytes($length));
     }
 
-    public static function cleanValue($value): string
+    public static function translate($key): string
     {
-        if (is_null($value)) return '';
-        return trim((string)$value);
+        return str_replace('_', ' ', ucfirst($key));
+    }
+
+    public static function permission_check($permission_name): bool
+    {
+        return true;
     }
 }
 
-// if (!function_exists('translate')) {
-//     function translate($key): string
-//     {
-//         return __('messages.' . $key);
-//     }
-// }
+if (!function_exists('translate')) {
+    function translate($key): string
+    {
+        return \App\CPU\Helpers::translate($key);
+    }
+}

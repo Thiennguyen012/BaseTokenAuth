@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Category\CategoryController;
+use App\Http\Controllers\Api\Tag\TagController;
+use App\Http\Controllers\Api\TagGroup\TagGroupController as ApiTagGroupController;
 use App\Http\Controllers\Api\CustomerContact\CustomerContactController;
 use App\Http\Controllers\Api\Product\ProductController;
 use App\Http\Controllers\Api\ProductVariant\ProductVariantController;
@@ -21,6 +23,9 @@ Route::prefix('api')->group(function () {
     Route::get('/products/{id}', [LandingController::class, 'product']);
     Route::get('/categories', [LandingController::class, 'categories']);
     Route::get('/categories/{slug}', [LandingController::class, 'category']);
+    Route::get('/tags', [LandingController::class, 'tags']);
+    Route::get('/tag-groups', [LandingController::class, 'tagGroups']);
+    Route::get('/tags/{slug}', [LandingController::class, 'tag']);
     Route::get('/page-contents', [LandingController::class, 'pages']);
     Route::get('/page-contents/{slug}', [LandingController::class, 'page']);
     Route::get('/pages/{slug}', [LandingController::class, 'page']);
@@ -61,6 +66,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [CategoryController::class, 'update']);
         Route::patch('/{id}', [CategoryController::class, 'update']);
         Route::delete('/{id}', [CategoryController::class, 'destroy']);
+    });
+
+    Route::prefix('tags')->group(function () {
+        Route::get('/', [TagController::class, 'index']);
+        Route::post('/', [TagController::class, 'store']);
+        Route::get('/{id}', [TagController::class, 'show']);
+        Route::put('/{id}', [TagController::class, 'update']);
+        Route::patch('/{id}', [TagController::class, 'update']);
+        Route::delete('/{id}', [TagController::class, 'destroy']);
+    });
+
+    Route::prefix('tag-groups')->group(function () {
+        Route::get('/', [ApiTagGroupController::class, 'index']);
+        Route::post('/', [ApiTagGroupController::class, 'store']);
+        Route::get('/{id}', [ApiTagGroupController::class, 'show']);
+        Route::put('/{id}', [ApiTagGroupController::class, 'update']);
+        Route::patch('/{id}', [ApiTagGroupController::class, 'update']);
+        Route::delete('/{id}', [ApiTagGroupController::class, 'destroy']);
     });
 
     Route::prefix('products')->group(function () {

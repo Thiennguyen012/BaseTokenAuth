@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Cms\CategoryController;
+use App\Http\Controllers\Cms\TagController;
+use App\Http\Controllers\Cms\TagGroupController;
 use App\Http\Controllers\Cms\CustomerContactController;
 use App\Http\Controllers\Cms\AuthController;
 use App\Http\Controllers\Cms\DashboardController;
@@ -25,6 +27,8 @@ Route::prefix('cms')->name('cms.')->group(function () {
         Route::get('products/{product}/variants', [ProductVariantController::class, 'forProduct'])->name('products.variants.index');
         Route::resource('products', ProductController::class)->only(['index', 'create', 'edit']);
         Route::resource('categories', CategoryController::class)->only(['index', 'create', 'edit']);
+        Route::resource('tags', TagController::class)->only(['index', 'create', 'edit']);
+        Route::resource('tag-groups', TagGroupController::class)->only(['index', 'create', 'edit']);
         Route::resource('customer-contacts', CustomerContactController::class)->only(['index', 'create', 'edit']);
         Route::get('variant-groups', fn () => redirect()->route('cms.products.index'))->name('variant-groups.index');
         Route::get('variant-options', fn () => redirect()->route('cms.products.index'))->name('variant-options.index');

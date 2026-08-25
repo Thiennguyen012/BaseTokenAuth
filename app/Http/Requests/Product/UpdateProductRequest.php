@@ -73,6 +73,8 @@ class UpdateProductRequest extends FormRequest
             'is_featured' => 'sometimes|boolean',
             'category_ids' => 'sometimes|array',
             'category_ids.*' => 'required|integer|distinct|exists:categories,id',
+            'tag_ids' => 'sometimes|array',
+            'tag_ids.*' => 'required|integer|distinct|exists:tags,id',
             'variant_groups' => 'sometimes|array',
             'variant_groups.*.variant_group_id' => 'required|integer|distinct|exists:variant_groups,id',
             'variant_groups.*.is_required' => 'sometimes|boolean',

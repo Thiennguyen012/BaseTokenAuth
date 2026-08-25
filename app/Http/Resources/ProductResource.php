@@ -44,6 +44,8 @@ class ProductResource extends JsonResource
             'is_featured' => $this->is_featured,
             'categories' => $this->whenLoaded('categories', fn () => CategoryResource::collection($this->categories)),
             'category_names' => $this->whenLoaded('categories', fn () => $this->categories->pluck('category_name')->implode(', ')),
+            'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)),
+            'tag_names' => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')->implode(', ')),
             'images' => $this->whenLoaded(
                 'files',
                 fn () => FileResource::collection($this->files->where('type', 'image')->values())

@@ -17,7 +17,7 @@ class ProductService
         $this->productRepository = $productRepository;
     }
 
-    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [])
+    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [])
     {
         $where = [];
 
@@ -42,11 +42,35 @@ class ProductService
             }
         }
 
+        if ($tagIds !== []) {
+            foreach ($tagIds as $tagId) {
+                $where['whereHas'][] = ['tags', ['tags.id' => (int) $tagId]];
+            }
+        }
+
+        if ($tagSlugs !== []) {
+            foreach ($tagSlugs as $tagSlug) {
+                $where['whereHas'][] = ['tags', ['tags.slug' => (string) $tagSlug]];
+            }
+        }
+
+        if ($tagGroupIds !== []) {
+            foreach ($tagGroupIds as $groupId) {
+                $where['whereHas'][] = ['tags.tagGroup', ['tag_groups.id' => (int) $groupId]];
+            }
+        }
+
+        if ($tagGroupCodes !== []) {
+            foreach ($tagGroupCodes as $groupCode) {
+                $where['whereHas'][] = ['tags.tagGroup', ['tag_groups.code' => (string) $groupCode]];
+            }
+        }
+
         if ($isFeatured !== null) {
             $where['is_featured'] = $isFeatured;
         }
 
-        return $this->productRepository->paginateListing($where, ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit, $sort);
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit, $sort);
     }
 
     public function getAll($search = '')
@@ -72,7 +96,7 @@ class ProductService
     {
         $product = $this->productRepository->find($id);
 
-        return $product?->load(['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
+        return $product?->load(['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
     }
 
     public function create(array $data)
@@ -80,15 +104,17 @@ class ProductService
         return DB::transaction(function () use ($data) {
             $groups = $data['variant_groups'] ?? [];
             $categoryIds = $data['category_ids'] ?? [];
+            $tagIds = $data['tag_ids'] ?? [];
             $images = $data['images'] ?? [];
-            unset($data['variant_groups'], $data['category_ids'], $data['images']);
+            unset($data['variant_groups'], $data['category_ids'], $data['tag_ids'], $data['images']);
             $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['product_name']);
             $product = $this->productRepository->create($data);
             $this->syncCategories($product, $categoryIds);
+            $this->syncTags($product, $tagIds);
             $this->syncVariantGroups($product, $groups);
             $this->uploadImages($product, $images);
 
-            return $product->load(['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
+            return $product->load(['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
         });
     }
 
@@ -97,24 +123,32 @@ class ProductService
         return DB::transaction(function () use ($product, $data) {
             $hasGroups = array_key_exists('variant_groups', $data);
             $hasCategories = array_key_exists('category_ids', $data);
+            $hasTags = array_key_exists('tag_ids', $data);
             $groups = $data['variant_groups'] ?? [];
             $categoryIds = $data['category_ids'] ?? [];
+            $tagIds = $data['tag_ids'] ?? [];
             $images = $data['images'] ?? [];
-            unset($data['variant_groups'], $data['category_ids'], $data['images']);
-            if (array_key_exists('slug', $data)) {
+            unset($data['variant_groups'], $data['category_ids'], $data['tag_ids'], $data['images']);
+            if (array_key_exists('product_name', $data)) {
                 $data['slug'] = $this->uniqueSlug(
-                    $data['slug'] ?: ($data['product_name'] ?? $product->product_name),
+                    $data['product_name'],
+                    (int) $product->id
+                );
+            } elseif (array_key_exists('slug', $data)) {
+                $data['slug'] = $this->uniqueSlug(
+                    $data['slug'] ?: $product->product_name,
                     (int) $product->id
                 );
             }
             $product = $this->productRepository->edit($product, $data);
             if ($hasCategories) $this->syncCategories($product, $categoryIds);
+            if ($hasTags) $this->syncTags($product, $tagIds);
             if ($hasGroups) {
                 $this->syncVariantGroups($product, $groups);
             }
             $this->uploadImages($product, $images);
 
-            return $product->load(['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
+            return $product->load(['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group']);
         });
     }
 
@@ -126,7 +160,7 @@ class ProductService
         });
     }
 
-    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [])
+    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [])
     {
         $where = ['is_active' => true];
         if ($search) {
@@ -143,10 +177,22 @@ class ProductService
         foreach ($categorySlugs as $categorySlug) {
             $where['whereHas'][] = ['categories', ['categories.slug' => (string) $categorySlug]];
         }
+        foreach ($tagIds as $tagId) {
+            $where['whereHas'][] = ['tags', ['tags.id' => (int) $tagId]];
+        }
+        foreach ($tagSlugs as $tagSlug) {
+            $where['whereHas'][] = ['tags', ['tags.slug' => (string) $tagSlug]];
+        }
+        foreach ($tagGroupIds as $groupId) {
+            $where['whereHas'][] = ['tags.tagGroup', ['tag_groups.id' => (int) $groupId]];
+        }
+        foreach ($tagGroupCodes as $groupCode) {
+            $where['whereHas'][] = ['tags.tagGroup', ['tag_groups.code' => (string) $groupCode]];
+        }
         if ($isFeatured !== null) {
             $where['is_featured'] = $isFeatured;
         }
-        return $this->productRepository->paginateListing($where, ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit, $sort);
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit, $sort);
     }
 
     public function findPublic($id)
@@ -155,7 +201,7 @@ class ProductService
 
         return $this->productRepository->first(
             $identity + ['is_active' => true], [], ['*'],
-            ['files', 'categories', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group']
+            ['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group']
         );
     }
 
@@ -257,5 +303,11 @@ class ProductService
         }
 
         return $slug;
+    }
+
+    private function syncTags($product, array $tagIds): void
+    {
+        $uniqueIds = array_values(array_unique(array_filter(array_map('intval', $tagIds))));
+        $product->tags()->sync($uniqueIds);
     }
 }
