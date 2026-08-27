@@ -36,6 +36,7 @@ use App\Repositories\SectionItem\SectionItemRepository;
 use App\Repositories\User\UserInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 
@@ -69,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Schema::defaultStringLength(191);
         View::composer('*', function ($view): void {
             static $pageConfigData = null;
 
