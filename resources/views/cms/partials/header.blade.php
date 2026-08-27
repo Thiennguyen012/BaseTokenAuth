@@ -22,7 +22,7 @@
             <div class="navbar-nav-wrap-content-right ml-auto">
                 <ul class="navbar-nav align-items-center flex-row">
                     <li class="nav-item d-none d-sm-inline-block mr-3">
-                        <a class="btn btn-xs rounded-pill px-3 cms-website-link" href="{{ rtrim(config('app.url'), '/') }}" target="_blank" rel="noopener noreferrer">
+                        <a class="btn btn-xs rounded-pill px-3 cms-website-link" href="{{ rtrim(config('app.frontend_url', config('app.url')), '/') }}" target="_blank" rel="noopener noreferrer">
                             <i class="ri-global-line mr-1"></i> Tới Website
                         </a>
                     </li>
