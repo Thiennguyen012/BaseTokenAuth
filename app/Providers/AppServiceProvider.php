@@ -86,7 +86,16 @@ class AppServiceProvider extends ServiceProvider
                     $disk = Storage::disk($logoFile?->disk ?: 'public');
                     if ($disk->exists($logoPath)) {
                         $logoUrl = $disk->url($logoPath);
+                    } else {
+                        $logoUrl = asset('storage/' . ltrim($logoPath, '/'));
                     }
+                }
+
+                if ($logoUrl) {
+                    $logoVersion = $logoFile?->updated_at?->timestamp
+                        ?: optional($pageConfig?->updated_at)->timestamp
+                        ?: time();
+                    $logoUrl .= (str_contains($logoUrl, '?') ? '&' : '?') . 'v=' . $logoVersion;
                 }
 
                 // Favicon resolution
@@ -98,7 +107,16 @@ class AppServiceProvider extends ServiceProvider
                     $disk = Storage::disk($faviconFile?->disk ?: 'public');
                     if ($disk->exists($faviconPath)) {
                         $faviconUrl = $disk->url($faviconPath);
+                    } else {
+                        $faviconUrl = asset('storage/' . ltrim($faviconPath, '/'));
                     }
+                }
+
+                if ($faviconUrl) {
+                    $faviconVersion = $faviconFile?->updated_at?->timestamp
+                        ?: optional($pageConfig?->updated_at)->timestamp
+                        ?: time();
+                    $faviconUrl .= (str_contains($faviconUrl, '?') ? '&' : '?') . 'v=' . $faviconVersion;
                 }
 
                 $pageConfigData = [
