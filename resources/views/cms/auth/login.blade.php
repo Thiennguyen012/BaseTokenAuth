@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Đăng nhập trang quản trị</title>
+    @if(!empty($cmsCompanyFaviconUrl))
+        <link rel="shortcut icon" href="{{ $cmsCompanyFaviconUrl }}">
+        <link rel="icon" href="{{ $cmsCompanyFaviconUrl }}">
+    @endif
     <link rel="stylesheet" href="{{ asset('cms-assets/cms.css') }}">
     <style>
         .login-header {

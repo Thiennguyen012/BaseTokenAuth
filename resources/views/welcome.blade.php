@@ -5,6 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+        @if(!empty($cmsCompanyFaviconUrl))
+            <link rel="shortcut icon" href="{{ $cmsCompanyFaviconUrl }}">
+            <link rel="icon" href="{{ $cmsCompanyFaviconUrl }}">
+        @endif
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

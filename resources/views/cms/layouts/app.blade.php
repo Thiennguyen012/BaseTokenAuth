@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'CMS cửa hàng') - {{ $cmsCompanyName }}</title>
+    @if(!empty($cmsCompanyFaviconUrl))
+        <link rel="shortcut icon" href="{{ $cmsCompanyFaviconUrl }}">
+        <link rel="icon" href="{{ $cmsCompanyFaviconUrl }}">
+    @endif
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

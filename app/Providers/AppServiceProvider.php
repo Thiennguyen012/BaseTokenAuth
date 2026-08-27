@@ -69,11 +69,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('cms.*', function ($view): void {
+        View::composer('*', function ($view): void {
             static $pageConfigData = null;
 
             if ($pageConfigData === null) {
                 $pageConfig = PageConfig::query()->with('files')->first();
+
+                // Logo resolution
                 $logoFile = $pageConfig?->files->firstWhere('type', 'logo');
                 $logoPath = $logoFile?->path ?: $pageConfig?->logo_path;
                 $logoUrl = $logoFile?->external_url;
@@ -85,9 +87,22 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
+                // Favicon resolution
+                $faviconFile = $pageConfig?->files->firstWhere('type', 'favicon');
+                $faviconPath = $faviconFile?->path ?: $pageConfig?->favicon_path;
+                $faviconUrl = $faviconFile?->external_url;
+
+                if (!$faviconUrl && $faviconPath) {
+                    $disk = Storage::disk($faviconFile?->disk ?: 'public');
+                    if ($disk->exists($faviconPath)) {
+                        $faviconUrl = $disk->url($faviconPath);
+                    }
+                }
+
                 $pageConfigData = [
                     'cmsCompanyName' => $pageConfig?->company_name ?: 'CMS',
                     'cmsCompanyLogoUrl' => $logoUrl,
+                    'cmsCompanyFaviconUrl' => $faviconUrl,
                 ];
             }
 

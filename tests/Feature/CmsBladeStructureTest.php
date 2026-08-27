@@ -318,4 +318,28 @@ class CmsBladeStructureTest extends TestCase
             ->assertSee('Công Ty Thương Mại ABC')
             ->assertDontSee('Nhựa CMS');
     }
+
+    public function test_cms_views_render_favicon_from_page_config_table(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Favicon Admin',
+            'email' => 'favicon@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('page-config/favicon/test-favicon.ico', 'fake-favicon-content');
+
+        \App\Models\PageConfigs\PageConfig::query()->create([
+            'company_name' => 'Brand',
+            'favicon_path' => 'page-config/favicon/test-favicon.ico',
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['cms_access_token' => 'test-token'])
+            ->get('/cms')
+            ->assertOk()
+            ->assertSee('rel="icon"', false)
+            ->assertSee('test-favicon.ico', false);
+    }
 }
