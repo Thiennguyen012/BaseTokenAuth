@@ -1,5 +1,5 @@
 @extends('cms.layouts.app')
-@section('title', $pageContent->title.' - CMS')
+@section('title', $pageContent->title)
 
 @section('content')
 <div class="content container-fluid" data-section-manager data-endpoint="{{ $config['api'] }}" data-page-id="{{ $pageContent->id }}" data-page-url="{{ url('/cms/page-contents/'.$pageContent->slug.'/sections') }}" data-per-page="{{ \App\CPU\Helpers::LIMIT_PER_PAGE }}">
