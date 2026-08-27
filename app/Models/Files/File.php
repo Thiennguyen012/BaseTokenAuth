@@ -37,6 +37,15 @@ class File extends Model
             if ($file->disk && $file->path) {
                 Storage::disk($file->disk)->delete($file->path);
             }
+            if ($file->model_type && $file->model_id && $file->type) {
+                $modelClass = $file->model_type;
+                if (class_exists($modelClass)) {
+                    $owner = $modelClass::find($file->model_id);
+                    if ($owner && isset($owner->{$file->type . '_path'})) {
+                        $owner->update([$file->type . '_path' => null]);
+                    }
+                }
+            }
         });
     }
 

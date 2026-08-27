@@ -129,7 +129,7 @@ class PageConfigTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.favicon_path', $faviconPath)
             ->assertJsonPath('data.logo_path', $logoPath)
-            ->assertJsonMissingPath('data.favicon')
-            ->assertJsonMissingPath('data.logo');
+            ->assertJsonPath('data.favicon.path', $faviconPath)
+            ->assertJsonPath('data.logo.path', $logoPath);
     }
 }

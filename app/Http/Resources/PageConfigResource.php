@@ -42,6 +42,8 @@ class PageConfigResource extends JsonResource
             'socials' => $this->socials ?? [],
             'favicon_path' => $this->filePath('favicon', $this->favicon_path),
             'logo_path' => $this->filePath('logo', $this->logo_path),
+            'favicon' => $this->fileResource('favicon', $this->favicon_path),
+            'logo' => $this->fileResource('logo', $this->logo_path),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),
         ];
@@ -54,5 +56,25 @@ class PageConfigResource extends JsonResource
         }
 
         return $this->resource->files->firstWhere('type', $type)?->path ?? $fallback;
+    }
+
+    private function fileResource(string $type, ?string $fallbackPath): ?array
+    {
+        if ($this->resource->relationLoaded('files')) {
+            $file = $this->resource->files->firstWhere('type', $type);
+            if ($file) {
+                return (new FileResource($file))->toArray(request());
+            }
+        }
+
+        if ($fallbackPath) {
+            return [
+                'id' => null,
+                'path' => $fallbackPath,
+                'file_name' => basename($fallbackPath),
+            ];
+        }
+
+        return null;
     }
 }

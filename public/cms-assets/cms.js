@@ -234,12 +234,12 @@ window.CMS = (() => {
                 downloadLink.innerHTML = '<i class="ri-download-2-line"></i>';
                 item.appendChild(downloadLink);
             }
-            if (file.id) {
-                const button = document.createElement('button');
-                button.type = 'button'; button.className = 'upload-remove-existing'; button.title = 'Xóa file đã lưu'; button.setAttribute('aria-label', 'Xóa file đã lưu');
-                button.innerHTML = '<i class="ri-close-line"></i>';
-                button.onclick = async () => {
-                    if (!await confirmRemoveStoredFile(name)) return;
+            const button = document.createElement('button');
+            button.type = 'button'; button.className = 'upload-remove-existing'; button.title = 'Xóa file đã lưu'; button.setAttribute('aria-label', 'Xóa file đã lưu');
+            button.innerHTML = '<i class="ri-close-line"></i>';
+            button.onclick = async () => {
+                if (!await confirmRemoveStoredFile(name)) return;
+                if (file.id) {
                     button.disabled = true;
                     try {
                         const result = await request(`/files/${file.id}`, {method: 'DELETE'});
@@ -249,9 +249,12 @@ window.CMS = (() => {
                         button.disabled = false;
                         toast(error.message, true);
                     }
-                };
-                item.appendChild(button);
-            }
+                } else {
+                    item.remove();
+                    toast('Đã gỡ file');
+                }
+            };
+            item.appendChild(button);
         }
         return item;
     }
