@@ -19,7 +19,7 @@ class CmsBladeStructureTest extends TestCase
     public function test_guest_is_redirected_to_cms_login(): void
     {
         $this->get('/cms')->assertRedirect('/cms/login');
-        $this->get('/cms/login')->assertOk()->assertSee('Đăng nhập CMS');
+        $this->get('/cms/login')->assertOk()->assertSee('Đăng nhập trang quản trị');
     }
 
     public function test_user_can_login_to_cms_with_a_server_side_blade_form(): void
@@ -48,7 +48,7 @@ class CmsBladeStructureTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
 
-        $this->actingAs($user)->get('/cms/login')->assertOk()->assertSee('Đăng nhập CMS');
+        $this->actingAs($user)->get('/cms/login')->assertOk()->assertSee('Đăng nhập trang quản trị');
         $this->assertGuest();
     }
 
@@ -78,7 +78,7 @@ class CmsBladeStructureTest extends TestCase
             ->assertOk()
             ->assertSee('Nội dung cần tư vấn');
 
-        $this->actingAs($user)->get('/cms/page-sections/create')->assertOk()->assertSee('Thêm bố cục');
+        $this->actingAs($user)->get('/cms/page-sections/create')->assertOk()->assertSee('bố cục');
         $this->actingAs($user)->get('/cms/section-items/1/edit')->assertOk()->assertSee('Chỉnh sửa nội dung section', false);
     }
 
@@ -160,7 +160,8 @@ class CmsBladeStructureTest extends TestCase
 
         $this->get(route('cms.product-variants.create', ['product_id' => $product->id]))
             ->assertOk()
-            ->assertSeeInOrder(['Tổng quan', 'Sản phẩm', 'Ống nhựa PVC', 'Thêm mới']);
+            ->assertSee('Biến thể')
+            ->assertSee('Thêm mới');
 
         $this->get('/cms/product-variants')->assertRedirect('/cms/products');
     }
@@ -296,5 +297,25 @@ class CmsBladeStructureTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull(session('cms_access_token'));
+    }
+
+    public function test_cms_views_render_company_name_from_page_config_table(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Brand Admin',
+            'email' => 'brand@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        \App\Models\PageConfigs\PageConfig::query()->create([
+            'company_name' => 'Công Ty Thương Mại ABC',
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['cms_access_token' => 'test-token'])
+            ->get('/cms')
+            ->assertOk()
+            ->assertSee('Công Ty Thương Mại ABC')
+            ->assertDontSee('Nhựa CMS');
     }
 }

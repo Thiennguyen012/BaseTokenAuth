@@ -3,7 +3,7 @@
         <div class="row align-items-center justify-content-between">
             <div class="col-md-6 text-center text-md-left mb-2 mb-md-0">
                 <p class="fs-13 text-muted mb-0">
-                    &copy; {{ date('Y') }} <strong>Nhựa CMS</strong>. Tất cả quyền được bảo lưu.
+                    &copy; {{ date('Y') }} <strong>{{ $cmsCompanyName }}</strong>. Tất cả quyền được bảo lưu.
                 </p>
             </div>
             <div class="col-md-6 text-center text-md-right">

@@ -3,8 +3,12 @@
         <div class="navbar-nav-wrap">
             <div class="navbar-brand-wrapper">
                 <a class="navbar-brand font-weight-bold text-primary" href="{{ route('cms.dashboard') }}">
-                    <span class="avatar avatar-sm avatar-circle bg-primary text-white mr-2 d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;font-weight:bold;">N</span>
-                    Nhựa CMS
+                    @if(!empty($cmsCompanyLogoUrl))
+                        <img class="cms-sidebar-logo mr-2" src="{{ $cmsCompanyLogoUrl }}" alt="{{ $cmsCompanyName }}" style="max-height: 32px;">
+                    @else
+                        <span class="avatar avatar-sm avatar-circle bg-primary text-white mr-2 d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;font-weight:bold;">{{ mb_strtoupper(mb_substr($cmsCompanyName, 0, 1)) }}</span>
+                    @endif
+                    {{ $cmsCompanyName }}
                 </a>
             </div>
 

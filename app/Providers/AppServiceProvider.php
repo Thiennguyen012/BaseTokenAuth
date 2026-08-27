@@ -69,23 +69,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('cms.partials.sidebar', function ($view): void {
-            $pageConfig = PageConfig::query()->with('files')->first();
-            $logoFile = $pageConfig?->files->firstWhere('type', 'logo');
-            $logoPath = $logoFile?->path ?: $pageConfig?->logo_path;
-            $logoUrl = $logoFile?->external_url;
+        View::composer('cms.*', function ($view): void {
+            static $pageConfigData = null;
 
-            if (!$logoUrl && $logoPath) {
-                $disk = Storage::disk($logoFile?->disk ?: 'public');
-                if ($disk->exists($logoPath)) {
-                    $logoUrl = $disk->url($logoPath);
+            if ($pageConfigData === null) {
+                $pageConfig = PageConfig::query()->with('files')->first();
+                $logoFile = $pageConfig?->files->firstWhere('type', 'logo');
+                $logoPath = $logoFile?->path ?: $pageConfig?->logo_path;
+                $logoUrl = $logoFile?->external_url;
+
+                if (!$logoUrl && $logoPath) {
+                    $disk = Storage::disk($logoFile?->disk ?: 'public');
+                    if ($disk->exists($logoPath)) {
+                        $logoUrl = $disk->url($logoPath);
+                    }
                 }
+
+                $pageConfigData = [
+                    'cmsCompanyName' => $pageConfig?->company_name ?: 'CMS',
+                    'cmsCompanyLogoUrl' => $logoUrl,
+                ];
             }
 
-            $view->with([
-                'cmsCompanyName' => $pageConfig?->company_name ?: 'Nhựa CMS',
-                'cmsCompanyLogoUrl' => $logoUrl,
-            ]);
+            $view->with($pageConfigData);
         });
 
         $isCachingConfig = $this->app->runningInConsole()
