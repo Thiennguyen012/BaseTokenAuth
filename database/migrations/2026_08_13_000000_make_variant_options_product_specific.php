@@ -9,18 +9,36 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('variant_options', function (Blueprint $table) {
-            $table->index('variant_group_id', 'variant_options_variant_group_id_index');
-        });
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->index('variant_group_id', 'variant_options_variant_group_id_index');
+            });
+        } catch (\Throwable) {
+        }
 
-        Schema::table('variant_options', function (Blueprint $table) {
-            $table->dropUnique('variant_options_variant_group_id_option_code_unique');
-            $table->foreignId('product_variant_group_id')
-                ->nullable()
-                ->after('id')
-                ->constrained('product_variant_groups')
-                ->cascadeOnDelete();
-        });
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropUnique('variant_options_variant_group_id_option_code_unique');
+            });
+        } catch (\Throwable) {
+        }
+
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropUnique(['variant_group_id', 'option_code']);
+            });
+        } catch (\Throwable) {
+        }
+
+        if (!Schema::hasColumn('variant_options', 'product_variant_group_id')) {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->foreignId('product_variant_group_id')
+                    ->nullable()
+                    ->after('id')
+                    ->constrained('product_variant_groups')
+                    ->cascadeOnDelete();
+            });
+        }
 
         $originalOptions = DB::table('variant_options')->whereNull('product_variant_group_id')->get();
         $configurations = DB::table('product_variant_groups')->get();
@@ -58,24 +76,55 @@ return new class extends Migration
 
         DB::table('variant_options')->whereNull('product_variant_group_id')->delete();
 
-        Schema::table('variant_options', function (Blueprint $table) {
-            $table->dropForeign(['variant_group_id']);
-            $table->dropIndex('variant_options_variant_group_id_index');
-        });
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropForeign(['variant_group_id']);
+            });
+        } catch (\Throwable) {
+        }
+
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropIndex('variant_options_variant_group_id_index');
+            });
+        } catch (\Throwable) {
+        }
+
+        if (Schema::hasColumn('variant_options', 'variant_group_id')) {
+            try {
+                Schema::table('variant_options', function (Blueprint $table) {
+                    $table->dropColumn('variant_group_id');
+                });
+            } catch (\Throwable) {
+            }
+        }
 
         Schema::table('variant_options', function (Blueprint $table) {
-            $table->dropColumn('variant_group_id');
             $table->foreignId('product_variant_group_id')->nullable(false)->change();
-            $table->unique(['product_variant_group_id', 'option_code'], 'pvg_option_code_unique');
         });
+
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->unique(['product_variant_group_id', 'option_code'], 'pvg_option_code_unique');
+            });
+        } catch (\Throwable) {
+        }
     }
 
     public function down(): void
     {
-        Schema::table('variant_options', function (Blueprint $table) {
-            $table->dropUnique('pvg_option_code_unique');
-            $table->foreignId('variant_group_id')->nullable()->after('product_variant_group_id');
-        });
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropUnique('pvg_option_code_unique');
+            });
+        } catch (\Throwable) {
+        }
+
+        if (!Schema::hasColumn('variant_options', 'variant_group_id')) {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->foreignId('variant_group_id')->nullable()->after('product_variant_group_id');
+            });
+        }
 
         $configurations = DB::table('product_variant_groups')->get()->keyBy('id');
         $productOptions = DB::table('variant_options')->get();
@@ -106,12 +155,34 @@ return new class extends Migration
 
         DB::table('variant_options')->whereNotNull('product_variant_group_id')->delete();
 
-        Schema::table('variant_options', function (Blueprint $table) {
-            $table->dropForeign(['product_variant_group_id']);
-            $table->dropColumn('product_variant_group_id');
-            $table->foreign('variant_group_id')->references('id')->on('variant_groups')->cascadeOnDelete();
-            $table->foreignId('variant_group_id')->nullable(false)->change();
-            $table->unique(['variant_group_id', 'option_code']);
-        });
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->dropForeign(['product_variant_group_id']);
+            });
+        } catch (\Throwable) {
+        }
+
+        if (Schema::hasColumn('variant_options', 'product_variant_group_id')) {
+            try {
+                Schema::table('variant_options', function (Blueprint $table) {
+                    $table->dropColumn('product_variant_group_id');
+                });
+            } catch (\Throwable) {
+            }
+        }
+
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->foreign('variant_group_id')->references('id')->on('variant_groups')->cascadeOnDelete();
+            });
+        } catch (\Throwable) {
+        }
+
+        try {
+            Schema::table('variant_options', function (Blueprint $table) {
+                $table->unique(['variant_group_id', 'option_code']);
+            });
+        } catch (\Throwable) {
+        }
     }
 };
