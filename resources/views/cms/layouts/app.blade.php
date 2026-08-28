@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="{{ asset('assets/back-end/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/back-end/css/custom.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/back-end/css/toastr.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="{{ asset('cms-assets/cms-components.css') }}?v={{ filemtime(public_path('cms-assets/cms-components.css')) }}">
     <style>
         #toast-container {
@@ -120,6 +121,7 @@
     <script src="{{ asset('assets/back-end/js/sweet_alert.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('assets/back-end/js/toastr.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ asset('assets/back-end/js/custom.js') }}"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script src="{{ asset('cms-assets/cms.js') }}?v={{ filemtime(public_path('cms-assets/cms.js')) }}"></script>

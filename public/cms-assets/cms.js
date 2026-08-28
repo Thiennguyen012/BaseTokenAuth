@@ -69,8 +69,13 @@ window.CMS = (() => {
                 toastr[type](message);
             }
         }
-        const element = document.querySelector('[data-toast]');
-        if (!element) return;
+        let element = document.querySelector('[data-toast]');
+        if (!element) {
+            element = document.createElement('div');
+            element.setAttribute('data-toast', '');
+            element.className = 'toast';
+            document.body.appendChild(element);
+        }
         const msgText = Array.isArray(message) ? message.join('<br>') : esc(message);
         element.innerHTML = `<span class="toast-icon">${isError ? '✕' : '✓'}</span><span>${msgText}</span>`;
         element.className = `toast ${type}`;
