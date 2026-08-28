@@ -17,13 +17,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
     
     <!-- CSS Plugins & Themes from cms-pwf -->
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/vendor.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/vendor/icon-set/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/theme.minc619.css?v=1.0') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/custom.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/back-end/css/toastr.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/vendor.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/vendor/icon-set/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/theme.minc619.css?v=1.0') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/custom.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/back-end/css/toastr.css') }}">
     <link rel="stylesheet" href="{{ asset('cms-assets/cms-components.css') }}?v={{ filemtime(public_path('cms-assets/cms-components.css')) }}">
     <style>
         #toast-container {
@@ -114,13 +114,13 @@
     <div class="toast" data-toast></div>
 
     <!-- JS Plugins & Scripts from cms-pwf -->
-    <script src="{{ asset('/assets/back-end/js/vendor.min.js') }}"></script>
-    <script src="{{ asset('/assets/back-end/js/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('/assets/back-end/js/theme.min.js') }}"></script>
-    <script src="{{ asset('/assets/back-end/js/sweet_alert.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/vendor.min.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/bootstrap.min.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/theme.min.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/sweet_alert.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset('/assets/back-end/js/toastr.js') }}"></script>
-    <script src="{{ asset('/assets/back-end/js/custom.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/toastr.js') }}"></script>
+    <script src="{{ asset('assets/back-end/js/custom.js') }}"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script src="{{ asset('cms-assets/cms.js') }}?v={{ filemtime(public_path('cms-assets/cms.js')) }}"></script>
 
