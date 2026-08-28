@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="{{ asset('assets/back-end/css/custom.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/back-end/css/toastr.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-    <link rel="stylesheet" href="{{ asset('cms-assets/cms-components.css') }}?v={{ filemtime(public_path('cms-assets/cms-components.css')) }}">
+    <link rel="stylesheet" href="{{ asset('cms-assets/cms-components.css') }}?v={{ @filemtime(public_path('cms-assets/cms-components.css')) ?: time() }}">
     <style>
         #toast-container {
             top: 14px !important;
@@ -34,14 +34,16 @@
         }
         #toast-container > .toast {
             opacity: 1 !important;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15) !important;
-            border-radius: 12px !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
+            border-radius: 10px !important;
             font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-            padding: 14px 18px 14px 48px !important;
-            background-size: 22px !important;
+            padding: 10px 14px 10px 42px !important;
+            background-size: 20px !important;
             font-weight: 600 !important;
-            font-size: 14px !important;
-            line-height: 1.4 !important;
+            font-size: 13.5px !important;
+            line-height: 1.35 !important;
+            width: auto !important;
+            max-width: 320px !important;
         }
         #toast-container > .toast-success {
             background-color: #ecfdf5 !important;
@@ -124,7 +126,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{{ asset('assets/back-end/js/custom.js') }}"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-    <script src="{{ asset('cms-assets/cms.js') }}?v={{ filemtime(public_path('cms-assets/cms.js')) }}"></script>
+    <script src="{{ asset('cms-assets/cms.js') }}?v={{ @filemtime(public_path('cms-assets/cms.js')) ?: time() }}"></script>
 
     <script>
         if (typeof toastr !== 'undefined') {

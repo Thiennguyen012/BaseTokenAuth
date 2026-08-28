@@ -52,7 +52,7 @@ window.CMS = (() => {
             ? error
             : (isError ? 'error' : 'success');
 
-        if (window.toastr && typeof window.toastr[type] === 'function') {
+        if (window.toastr && window.toastr !== window._cmsToastrPolyfill && typeof window.toastr[type] === 'function') {
             try {
                 toastr.options = {
                     "closeButton": true,
@@ -64,6 +64,7 @@ window.CMS = (() => {
                 };
                 const msg = Array.isArray(message) ? message.join('<br>') : message;
                 toastr[type](msg);
+                return;
             } catch (e) {}
         }
 
@@ -71,29 +72,29 @@ window.CMS = (() => {
         if (!container) {
             container = document.createElement('div');
             container.id = 'cms-custom-toast-container';
-            container.style.cssText = 'position:fixed;top:16px;right:24px;z-index:9999999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:420px;width:calc(100vw - 48px);';
+            container.style.cssText = 'position:fixed;top:16px;right:24px;z-index:9999999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none;max-width:320px;width:fit-content;';
             document.body.appendChild(container);
         }
 
         const toastEl = document.createElement('div');
         toastEl.style.cssText = `
             pointer-events: auto;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 12px;
-            padding: 13px 18px;
-            border-radius: 12px;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 10px;
             background: ${type === 'error' ? '#fef2f2' : type === 'warning' ? '#fffbeb' : type === 'info' ? '#f0f9ff' : '#ecfdf5'};
             color: ${type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : type === 'info' ? '#075985' : '#065f46'};
             border: 1px solid ${type === 'error' ? '#fecaca' : type === 'warning' ? '#fde68a' : type === 'info' ? '#bae6fd' : '#a7f3d0'};
-            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12), 0 4px 10px rgba(0, 0, 0, 0.04);
             font-family: Inter, system-ui, -apple-system, sans-serif;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
-            line-height: 1.4;
+            line-height: 1.35;
             transform: translateX(120%);
             opacity: 0;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
         `;
 
         const iconBg = type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : type === 'info' ? '#0284c7' : '#059669';
@@ -118,6 +119,18 @@ window.CMS = (() => {
             toastEl.style.opacity = '0';
             setTimeout(() => toastEl.remove(), 350);
         }, 4500);
+    }
+
+    window.toast = toast;
+    if (!window.toastr) {
+        window._cmsToastrPolyfill = {
+            success: (msg) => toast(msg, 'success'),
+            error: (msg) => toast(msg, 'error'),
+            warning: (msg) => toast(msg, 'warning'),
+            info: (msg) => toast(msg, 'info'),
+            options: {}
+        };
+        window.toastr = window._cmsToastrPolyfill;
     }
 
     function flashToast(message, error = false) {
