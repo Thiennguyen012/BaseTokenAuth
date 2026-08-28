@@ -23,6 +23,7 @@ class Product extends Model
         'description',
         'is_active',
         'is_featured',
+        'is_contact_price',
     ];
 
     public function categories(): BelongsToMany
@@ -44,6 +45,7 @@ class Product extends Model
         return [
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'is_contact_price' => 'boolean',
         ];
     }
 

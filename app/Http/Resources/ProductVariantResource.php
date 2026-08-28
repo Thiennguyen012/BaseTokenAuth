@@ -16,6 +16,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="price", type="string", nullable=true, example="150000.00"),
  *     @OA\Property(property="stock", type="integer"),
  *     @OA\Property(property="is_active", type="boolean"),
+ *     @OA\Property(property="is_contact_price", type="boolean"),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
  *     @OA\Property(property="first_image", nullable=true, ref="#/components/schemas/FileResource"),
  *     @OA\Property(property="options", type="array", @OA\Items(ref="#/components/schemas/VariantOptionResource")),
@@ -34,7 +35,8 @@ class ProductVariantResource extends JsonResource
             'sku' => $this->sku,
             'price' => $this->price,
             'stock' => $this->stock,
-            'is_active' => $this->is_active,
+            'is_active' => (bool) $this->is_active,
+            'is_contact_price' => (bool) $this->is_contact_price,
             'images' => $this->whenLoaded(
                 'files',
                 fn () => FileResource::collection($this->files->where('type', 'image')->values())

@@ -33,6 +33,10 @@ class UpdateTagRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id');
+        if ($id && !is_numeric($id)) {
+            $tag = app(\App\Services\Tag\TagService::class)->find((string) $id);
+            $id = $tag?->id ?? $id;
+        }
 
         return [
             'name' => 'sometimes|string|max:255',

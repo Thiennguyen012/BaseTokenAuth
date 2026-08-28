@@ -17,6 +17,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="price", type="number", format="decimal", minimum=0, nullable=true),
  *     @OA\Property(property="stock", type="integer", minimum=0, nullable=true),
  *     @OA\Property(property="is_active", type="boolean", nullable=true),
+ *     @OA\Property(property="is_contact_price", type="boolean", nullable=true),
  *     @OA\Property(property="option_ids[]", type="array", @OA\Items(type="integer")),
  *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
  * )
@@ -41,6 +42,7 @@ class UpdateProductVariantRequest extends FormRequest
             'price' => 'sometimes|nullable|numeric|min:0',
             'stock' => 'sometimes|nullable|integer|min:0',
             'is_active' => 'sometimes|nullable|boolean',
+            'is_contact_price' => 'sometimes|nullable|boolean',
             'option_ids' => 'sometimes|array',
             'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
             'images' => 'sometimes|array|max:10',

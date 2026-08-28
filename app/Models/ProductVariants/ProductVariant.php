@@ -21,6 +21,7 @@ class ProductVariant extends Model
         'price',
         'stock',
         'is_active',
+        'is_contact_price',
     ];
 
     protected function casts(): array
@@ -30,6 +31,7 @@ class ProductVariant extends Model
             'price' => 'decimal:2',
             'stock' => 'integer',
             'is_active' => 'boolean',
+            'is_contact_price' => 'boolean',
         ];
     }
 

@@ -17,6 +17,10 @@ class UpdateCategoryRequest extends FormRequest
     public function rules(): array
     {
         $categoryId = $this->route('id');
+        if ($categoryId && !is_numeric($categoryId)) {
+            $category = app(\App\Services\Category\CategoryService::class)->find((string) $categoryId);
+            $categoryId = $category?->id ?? $categoryId;
+        }
 
         return [
             'category_name' => [

@@ -16,6 +16,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="price", type="number", format="decimal", minimum=0, nullable=true),
  *     @OA\Property(property="stock", type="integer", minimum=0, nullable=true),
  *     @OA\Property(property="is_active", type="boolean", nullable=true),
+ *     @OA\Property(property="is_contact_price", type="boolean", nullable=true),
  *     @OA\Property(property="option_ids[]", type="array", @OA\Items(type="integer")),
  *     @OA\Property(property="generate_all_combinations", type="boolean", description="Tạo toàn bộ tổ hợp từ các option đang hoạt động"),
  *     @OA\Property(property="images[]", type="array", maxItems=10, @OA\Items(type="string", format="binary"))
@@ -38,6 +39,7 @@ class StoreProductVariantRequest extends FormRequest
             'price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
+            'is_contact_price' => 'nullable|boolean',
             'option_ids' => [$generateAll ? 'nullable' : 'required', 'array'],
             'option_ids.*' => 'required|integer|distinct|exists:variant_options,id',
             'generate_all_combinations' => 'nullable|boolean',

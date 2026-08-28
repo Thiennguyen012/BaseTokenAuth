@@ -5,7 +5,7 @@ return [
         'products' => [
             'title' => 'Sản phẩm', 'description' => 'Quản lý sản phẩm, trạng thái và hình ảnh.', 'api' => 'products',
             'filters' => [['name' => 'category_ids', 'label' => 'Chọn danh mục để lọc', 'source' => 'categories', 'value' => 'id', 'text' => 'category_name', 'multiple' => true]],
-            'columns' => ['first_image' => 'Hình ảnh', 'product_name' => 'Tên sản phẩm', 'slug' => 'Slug', 'sku' => 'SKU', 'category_names' => 'Danh mục', 'is_active' => 'Hoạt động', 'is_featured' => 'Nổi bật'],
+            'columns' => ['first_image' => 'Hình ảnh', 'product_name' => 'Tên sản phẩm', 'slug' => 'Slug', 'sku' => 'SKU', 'category_names' => 'Danh mục', 'is_active' => 'Hoạt động', 'is_featured' => 'Nổi bật', 'is_contact_price' => 'Giá liên hệ'],
             'fields' => [
                 ['name' => 'product_name', 'label' => 'Tên sản phẩm', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập tên sản phẩm'],
                 ['name' => 'sku', 'label' => 'SKU', 'type' => 'text', 'placeholder' => 'Nhập mã SKU'],
@@ -14,6 +14,7 @@ return [
                 ['name' => 'tag_ids', 'label' => 'Nhãn sản phẩm', 'type' => 'multi_select_api', 'source' => 'tags', 'value' => 'id', 'text' => 'name', 'placeholder' => 'Nhập tên nhãn để tìm kiếm'],
                 ['name' => 'is_active', 'label' => 'Đang hoạt động', 'type' => 'checkbox'],
                 ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
+                ['name' => 'is_contact_price', 'label' => 'Giá liên hệ / Báo giá', 'type' => 'checkbox'],
                 ['name' => 'variant_groups', 'label' => 'Nhóm biến thể', 'type' => 'product_variant_groups', 'source' => 'variant-groups'],
                 ['name' => 'images', 'label' => 'Hình ảnh', 'type' => 'files', 'accept' => 'image/jpeg,image/png,image/webp'],
             ],
@@ -93,12 +94,13 @@ return [
         'product-variants' => [
             'title' => 'Biến thể sản phẩm', 'description' => 'Quản lý SKU, giá, tồn kho và hình ảnh.', 'api' => 'product-variants',
             'filters' => [['name' => 'product_id', 'label' => 'Tất cả sản phẩm', 'source' => 'products', 'value' => 'id', 'text' => 'product_name']],
-            'columns' => ['first_image' => 'Hình ảnh', 'sku' => 'SKU', 'product_name' => 'Sản phẩm', 'option_names' => 'Tổ hợp biến thể', 'price' => 'Giá', 'stock' => 'Tồn kho', 'is_active' => 'Hoạt động'],
+            'columns' => ['first_image' => 'Hình ảnh', 'sku' => 'SKU', 'product_name' => 'Sản phẩm', 'option_names' => 'Tổ hợp biến thể', 'price' => 'Giá', 'is_contact_price' => 'Giá liên hệ', 'stock' => 'Tồn kho', 'is_active' => 'Hoạt động'],
             'fields' => [
                 ['name' => 'product_id', 'label' => 'Sản phẩm', 'type' => 'searchable_select_api', 'source' => 'products', 'value' => 'id', 'text' => 'product_name', 'required' => true, 'lock_on_edit' => true, 'placeholder' => 'Tìm theo tên hoặc SKU'],
                 ['name' => 'option_ids', 'label' => 'Giá trị biến thể', 'type' => 'variant_options', 'required' => true],
                 ['name' => 'sku', 'label' => 'SKU', 'type' => 'text', 'required' => true, 'placeholder' => 'Nhập mã SKU'],
                 ['name' => 'price', 'label' => 'Giá', 'type' => 'number', 'placeholder' => 'Nhập giá bán', 'min' => 0, 'step' => '0.01', 'help' => 'Khi tạo tất cả tổ hợp, giá này được áp dụng giống nhau cho mọi biến thể mới.'],
+                ['name' => 'is_contact_price', 'label' => 'Giá liên hệ / Báo giá', 'type' => 'checkbox'],
                 ['name' => 'stock', 'label' => 'Tồn kho', 'type' => 'number', 'placeholder' => 'Nhập số lượng tồn kho', 'min' => 0, 'step' => 1, 'help' => 'Khi tạo tất cả tổ hợp, tồn kho này được áp dụng giống nhau cho mọi biến thể mới.'],
                 ['name' => 'is_active', 'label' => 'Hoạt động', 'type' => 'checkbox', 'default' => true],
                 ['name' => 'images', 'label' => 'Hình ảnh', 'type' => 'files', 'accept' => 'image/jpeg,image/png,image/webp'],

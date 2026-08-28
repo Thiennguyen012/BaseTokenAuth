@@ -25,6 +25,10 @@ class UpdatePageContentRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id') ?? $this->route('page_content');
+        if ($id && !is_numeric($id)) {
+            $pageContent = app(\App\Services\PageContent\PageContentService::class)->findBySlug((string) $id);
+            $id = $pageContent?->id ?? $id;
+        }
 
         return [
             'slug' => [

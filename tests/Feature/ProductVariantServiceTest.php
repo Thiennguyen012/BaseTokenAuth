@@ -156,6 +156,24 @@ class ProductVariantServiceTest extends TestCase
         $this->assertDatabaseMissing('product_variant_values', ['product_variant_id' => $variant->id]);
     }
 
+    public function test_product_and_variant_support_is_contact_price_flag(): void
+    {
+        [$product, $colorRed, $sizeM] = $this->catalog();
+        $product->update(['is_contact_price' => true]);
+        $this->assertTrue($product->fresh()->is_contact_price);
+
+        $service = app(ProductVariantService::class);
+        $variant = $service->create([
+            'product_id' => $product->id,
+            'sku' => 'TS-CONTACT-PRICE',
+            'is_contact_price' => true,
+            'option_ids' => [$colorRed->id, $sizeM->id],
+        ]);
+
+        $this->assertTrue($variant->is_contact_price);
+        $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'is_contact_price' => 1]);
+    }
+
     private function catalog(): array
     {
         $product = Product::query()->create(['product_name' => 'T-shirt']);

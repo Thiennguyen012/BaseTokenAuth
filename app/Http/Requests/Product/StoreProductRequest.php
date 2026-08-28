@@ -18,6 +18,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="is_active", type="boolean", nullable=true, default=true),
  *     @OA\Property(property="is_featured", type="boolean", nullable=true, default=false),
+ *     @OA\Property(property="is_contact_price", type="boolean", nullable=true, default=false),
  *     @OA\Property(property="category_ids", type="array", @OA\Items(type="integer")),
  *     @OA\Property(
  *         property="variant_groups",
@@ -56,6 +57,7 @@ class StoreProductRequest extends FormRequest
             'description' => 'nullable|string',
             'is_active' => 'nullable|boolean',
             'is_featured' => 'nullable|boolean',
+            'is_contact_price' => 'nullable|boolean',
             'category_ids' => 'sometimes|array',
             'category_ids.*' => 'required|integer|distinct|exists:categories,id',
             'tag_ids' => 'sometimes|array',

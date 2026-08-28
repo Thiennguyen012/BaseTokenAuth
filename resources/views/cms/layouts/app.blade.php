@@ -25,6 +25,64 @@
     <link rel="stylesheet" href="{{ asset('/assets/back-end/css/custom.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/back-end/css/toastr.css') }}">
     <link rel="stylesheet" href="{{ asset('cms-assets/cms-components.css') }}?v={{ filemtime(public_path('cms-assets/cms-components.css')) }}">
+    <style>
+        #toast-container {
+            top: 14px !important;
+            right: 24px !important;
+            z-index: 999999 !important;
+        }
+        #toast-container > .toast {
+            opacity: 1 !important;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15) !important;
+            border-radius: 12px !important;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            padding: 14px 18px 14px 48px !important;
+            background-size: 22px !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+        }
+        #toast-container > .toast-success {
+            background-color: #ecfdf5 !important;
+            color: #065f46 !important;
+            border: 1px solid #a7f3d0 !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23059669'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E") !important;
+        }
+        #toast-container > .toast-success .toast-close-button {
+            color: #047857 !important;
+            text-shadow: none !important;
+            opacity: 0.7 !important;
+        }
+        #toast-container > .toast-success .toast-close-button:hover {
+            opacity: 1 !important;
+        }
+        #toast-container > .toast-error {
+            background-color: #fef2f2 !important;
+            color: #991b1b !important;
+            border: 1px solid #fecaca !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dc2626'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E") !important;
+        }
+        #toast-container > .toast-error .toast-close-button {
+            color: #b91c1c !important;
+            text-shadow: none !important;
+            opacity: 0.7 !important;
+        }
+        #toast-container > .toast-error .toast-close-button:hover {
+            opacity: 1 !important;
+        }
+        #toast-container > .toast-warning {
+            background-color: #fffbeb !important;
+            color: #92400e !important;
+            border: 1px solid #fde68a !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d97706'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E") !important;
+        }
+        #toast-container > .toast-info {
+            background-color: #f0f9ff !important;
+            color: #075985 !important;
+            border: 1px solid #bae6fd !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230284c7'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E") !important;
+        }
+    </style>
     @stack('css')
     @stack('css_or_js')
 </head>

@@ -46,11 +46,27 @@ window.CMS = (() => {
     }
 
     function toast(message, error = false) {
+        if (window.toastr) {
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "4000",
+                "extendedTimeOut": "1000",
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
+            if (error) {
+                toastr.error(message);
+            } else {
+                toastr.success(message);
+            }
+        }
         const element = document.querySelector('[data-toast]');
         if (!element) return;
-        element.innerHTML = `<span class="toast-icon">${error ? '!' : '✓'}</span><span>${esc(message)}</span>`;
+        element.innerHTML = `<span class="toast-icon">${error ? '✕' : '✓'}</span><span>${esc(message)}</span>`;
         element.className = `toast${error ? ' error' : ''}`;
-        element.style.display = 'block';
+        element.style.display = 'flex';
         clearTimeout(element._timer);
         element._timer = setTimeout(() => element.style.display = 'none', 4000);
     }
@@ -154,9 +170,9 @@ window.CMS = (() => {
     }
 
     function tableValue(key, value, row = null) {
-        if (typeof value === 'boolean' || key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required') {
+        if (typeof value === 'boolean' || key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required' || key === 'is_contact_price') {
             const isChecked = Boolean(value === true || value === 1 || value === '1' || value === 'true' || value === 'Active');
-            if (row && row.id && (key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required' || typeof value === 'boolean')) {
+            if (row && row.id && (key === 'is_active' || key === 'is_featured' || key === 'featured' || key === 'is_required' || key === 'is_contact_price' || typeof value === 'boolean')) {
                 return `<label class="switcher mb-0" title="Bật / Tắt">
                     <input type="checkbox" class="switcher_input toggle-row-boolean" data-field="${esc(key)}" data-id="${row.id}" ${isChecked ? 'checked' : ''}>
                     <span class="switcher_control"></span>
@@ -177,8 +193,14 @@ window.CMS = (() => {
                 ? `<img class="table-image" src="${esc(url)}" alt="" loading="lazy">`
                 : '<span class="table-image-empty">Chưa có ảnh</span>';
         }
-        if (key === 'price' && value !== null && value !== undefined && value !== '') {
-            return `${new Intl.NumberFormat('vi-VN').format(Number(value))} ₫`;
+        if (key === 'price') {
+            if (row && (row.is_contact_price === true || row.is_contact_price === 1 || row.is_contact_price === '1')) {
+                return '<span class="badge badge-soft-info font-weight-bold">Giá liên hệ</span>';
+            }
+            if (value !== null && value !== undefined && value !== '') {
+                return `${new Intl.NumberFormat('vi-VN').format(Number(value))} ₫`;
+            }
+            return '—';
         }
         if (key === 'category_names' || key === 'consultation_content' || key === 'description') {
             const raw = String(value || '');

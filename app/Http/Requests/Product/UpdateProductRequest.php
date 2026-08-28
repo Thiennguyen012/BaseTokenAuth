@@ -19,6 +19,7 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="is_active", type="boolean"),
  *     @OA\Property(property="is_featured", type="boolean"),
+ *     @OA\Property(property="is_contact_price", type="boolean"),
  *     @OA\Property(property="category_ids", type="array", @OA\Items(type="integer")),
  *     @OA\Property(
  *         property="variant_groups",
@@ -51,6 +52,10 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         $productId = $this->route('id');
+        if ($productId && !is_numeric($productId)) {
+            $product = app(\App\Services\Product\ProductService::class)->find((string) $productId);
+            $productId = $product?->id ?? $productId;
+        }
 
         return [
             'product_name' => 'sometimes|string|max:255',
@@ -71,6 +76,7 @@ class UpdateProductRequest extends FormRequest
             'description' => 'sometimes|nullable|string',
             'is_active' => 'sometimes|boolean',
             'is_featured' => 'sometimes|boolean',
+            'is_contact_price' => 'sometimes|boolean',
             'category_ids' => 'sometimes|array',
             'category_ids.*' => 'required|integer|distinct|exists:categories,id',
             'tag_ids' => 'sometimes|array',
