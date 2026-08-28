@@ -138,9 +138,6 @@
                             if(response.result){
                                 location.reload();
                             }else{
-                                toastr.options = {
-                                    "positionClass": "toast-top-right"
-                                }
                                 toastr.error(response.message);
                             }
                         }

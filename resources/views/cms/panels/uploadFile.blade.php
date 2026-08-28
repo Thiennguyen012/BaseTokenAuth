@@ -250,9 +250,6 @@
                             if(response.result){
                                 location.reload();
                             }else{
-                                toastr.options = {
-                                    "positionClass": "toast-top-right"
-                                }
                                 toastr.error(response.message);
                             }
                         }
@@ -260,13 +257,5 @@
                 }
             })
         });
-        
-        // Thêm toastr options nếu chưa có
-        if (typeof toastr !== 'undefined') {
-            toastr.options = {
-                "positionClass": "toast-top-right",
-                "timeOut": "5000"
-            }
-        }
     </script>
 @endpush

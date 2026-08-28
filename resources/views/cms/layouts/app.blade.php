@@ -125,25 +125,42 @@
     <script src="{{ asset('cms-assets/cms.js') }}?v={{ filemtime(public_path('cms-assets/cms.js')) }}"></script>
 
     <script>
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "4000"
-        };
+        if (typeof toastr !== 'undefined') {
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "4000",
+                "extendedTimeOut": "1000",
+                "preventDuplicates": true,
+                "showMethod": "fadeIn",
+                "hideMethod": "fadeOut"
+            };
 
-        @if(session('success'))
-            toastr.success("{{ session('success') }}");
-        @endif
-        @if(session('error'))
-            toastr.error("{{ session('error') }}");
-        @endif
-        @if(session('warning'))
-            toastr.warning("{{ session('warning') }}");
-        @endif
-        @if(session('info'))
-            toastr.info("{{ session('info') }}");
-        @endif
+            @if(session('success'))
+                toastr.success({!! json_encode((string) session('success')) !!});
+            @endif
+            @if(session('status'))
+                toastr.success({!! json_encode((string) session('status')) !!});
+            @endif
+            @if(session('error'))
+                toastr.error({!! json_encode((string) session('error')) !!});
+            @endif
+            @if(session('warning'))
+                toastr.warning({!! json_encode((string) session('warning')) !!});
+            @endif
+            @if(session('info'))
+                toastr.info({!! json_encode((string) session('info')) !!});
+            @endif
+            @if(session('message'))
+                toastr.info({!! json_encode((string) session('message')) !!});
+            @endif
+            @if(isset($errors) && $errors->any())
+                @foreach($errors->all() as $error)
+                    toastr.error({!! json_encode((string) $error) !!});
+                @endforeach
+            @endif
+        }
     </script>
 
     <script>

@@ -46,6 +46,12 @@ window.CMS = (() => {
     }
 
     function toast(message, error = false) {
+        if (!message) return;
+        const isError = error === true || error === 'error';
+        const type = typeof error === 'string' && ['success', 'error', 'warning', 'info'].includes(error)
+            ? error
+            : (isError ? 'error' : 'success');
+
         if (window.toastr) {
             toastr.options = {
                 "closeButton": true,
@@ -53,22 +59,26 @@ window.CMS = (() => {
                 "positionClass": "toast-top-right",
                 "timeOut": "4000",
                 "extendedTimeOut": "1000",
+                "preventDuplicates": true,
                 "showMethod": "fadeIn",
                 "hideMethod": "fadeOut"
             };
-            if (error) {
-                toastr.error(message);
+            if (Array.isArray(message)) {
+                message.forEach(msg => toastr[type](msg));
             } else {
-                toastr.success(message);
+                toastr[type](message);
             }
         }
         const element = document.querySelector('[data-toast]');
         if (!element) return;
-        element.innerHTML = `<span class="toast-icon">${error ? '✕' : '✓'}</span><span>${esc(message)}</span>`;
-        element.className = `toast${error ? ' error' : ''}`;
+        const msgText = Array.isArray(message) ? message.join('<br>') : esc(message);
+        element.innerHTML = `<span class="toast-icon">${isError ? '✕' : '✓'}</span><span>${msgText}</span>`;
+        element.className = `toast ${type}`;
         element.style.display = 'flex';
         clearTimeout(element._timer);
-        element._timer = setTimeout(() => element.style.display = 'none', 4000);
+        element._timer = setTimeout(() => {
+            element.style.display = 'none';
+        }, 4000);
     }
 
     function flashToast(message, error = false) {
