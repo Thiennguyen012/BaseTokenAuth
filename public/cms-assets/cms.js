@@ -52,38 +52,72 @@ window.CMS = (() => {
             ? error
             : (isError ? 'error' : 'success');
 
-        if (window.toastr) {
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true,
-                "positionClass": "toast-top-right",
-                "timeOut": "4000",
-                "extendedTimeOut": "1000",
-                "preventDuplicates": true,
-                "showMethod": "fadeIn",
-                "hideMethod": "fadeOut"
-            };
-            if (Array.isArray(message)) {
-                message.forEach(msg => toastr[type](msg));
-            } else {
-                toastr[type](message);
-            }
+        if (window.toastr && typeof window.toastr[type] === 'function') {
+            try {
+                toastr.options = {
+                    "closeButton": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "timeOut": 4000,
+                    "extendedTimeOut": 1000,
+                    "preventDuplicates": true
+                };
+                const msg = Array.isArray(message) ? message.join('<br>') : message;
+                toastr[type](msg);
+            } catch (e) {}
         }
-        let element = document.querySelector('[data-toast]');
-        if (!element) {
-            element = document.createElement('div');
-            element.setAttribute('data-toast', '');
-            element.className = 'toast';
-            document.body.appendChild(element);
+
+        let container = document.getElementById('cms-custom-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'cms-custom-toast-container';
+            container.style.cssText = 'position:fixed;top:16px;right:24px;z-index:9999999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:420px;width:calc(100vw - 48px);';
+            document.body.appendChild(container);
         }
-        const msgText = Array.isArray(message) ? message.join('<br>') : esc(message);
-        element.innerHTML = `<span class="toast-icon">${isError ? '✕' : '✓'}</span><span>${msgText}</span>`;
-        element.className = `toast ${type}`;
-        element.style.display = 'flex';
-        clearTimeout(element._timer);
-        element._timer = setTimeout(() => {
-            element.style.display = 'none';
-        }, 4000);
+
+        const toastEl = document.createElement('div');
+        toastEl.style.cssText = `
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 18px;
+            border-radius: 12px;
+            background: ${type === 'error' ? '#fef2f2' : type === 'warning' ? '#fffbeb' : type === 'info' ? '#f0f9ff' : '#ecfdf5'};
+            color: ${type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : type === 'info' ? '#075985' : '#065f46'};
+            border: 1px solid ${type === 'error' ? '#fecaca' : type === 'warning' ? '#fde68a' : type === 'info' ? '#bae6fd' : '#a7f3d0'};
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(0, 0, 0, 0.05);
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        `;
+
+        const iconBg = type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : type === 'info' ? '#0284c7' : '#059669';
+        const iconChar = type === 'error' ? '✕' : type === 'warning' ? '!' : type === 'info' ? 'i' : '✓';
+        const msgContent = Array.isArray(message) ? message.join('<br>') : esc(message);
+
+        toastEl.innerHTML = `
+            <span style="display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border-radius:50%;background:${iconBg};color:#fff;font-weight:900;font-size:12px;">${iconChar}</span>
+            <span style="flex:1;">${msgContent}</span>
+            <button type="button" style="background:none;border:none;color:inherit;font-size:18px;cursor:pointer;opacity:0.6;padding:0 0 0 8px;line-height:1;" onclick="this.parentElement.remove()">&times;</button>
+        `;
+
+        container.appendChild(toastEl);
+
+        requestAnimationFrame(() => {
+            toastEl.style.transform = 'translateX(0)';
+            toastEl.style.opacity = '1';
+        });
+
+        setTimeout(() => {
+            toastEl.style.transform = 'translateX(120%)';
+            toastEl.style.opacity = '0';
+            setTimeout(() => toastEl.remove(), 350);
+        }, 4500);
     }
 
     function flashToast(message, error = false) {
