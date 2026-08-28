@@ -47,6 +47,7 @@ window.CMS = (() => {
 
     function toast(message, error = false) {
         if (!message) return;
+        console.log('[CMS Toast]:', message, error);
         const isError = error === true || error === 'error';
         const type = typeof error === 'string' && ['success', 'error', 'warning', 'info'].includes(error)
             ? error
