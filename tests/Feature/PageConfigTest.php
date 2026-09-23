@@ -73,7 +73,7 @@ class PageConfigTest extends TestCase
             'map_url' => 'khong-phai-url',
             'hotline' => '09abc',
             'email' => 'email-khong-hop-le',
-            'socials' => ['facebook' => 'not-a-url'],
+            'socials' => ['facebook' => str_repeat('a', 2049)],
         ], $request->rules());
 
         $this->assertFalse($valid->fails());
@@ -131,5 +131,25 @@ class PageConfigTest extends TestCase
             ->assertJsonPath('data.logo_path', $logoPath)
             ->assertJsonPath('data.favicon.path', $faviconPath)
             ->assertJsonPath('data.logo.path', $logoPath);
+    }
+
+    public function test_page_config_api_returns_zalo_chat_link_and_qr_code_url(): void
+    {
+        $service = app(PageConfigService::class);
+        $service->update($service->singleton(), [
+            'hotline' => '0915799080',
+            'socials' => [
+                'zalo' => '0987654321',
+            ],
+        ]);
+
+        $response = $this->getJson('/api/page-configs')
+            ->assertOk()
+            ->assertJsonPath('data.zalo.phone', '0987654321')
+            ->assertJsonPath('data.zalo.url', 'https://zalo.me/0987654321');
+
+        $qrUrl = $response->json('data.zalo.qr_url');
+        $this->assertStringContainsString('https://api.qrserver.com/v1/create-qr-code/', $qrUrl);
+        $this->assertStringContainsString('zalo.me', $qrUrl);
     }
 }

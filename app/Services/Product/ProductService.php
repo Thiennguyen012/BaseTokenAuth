@@ -109,6 +109,10 @@ class ProductService
             unset($data['variant_groups'], $data['category_ids'], $data['tag_ids'], $data['images']);
             $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['product_name']);
             $product = $this->productRepository->create($data);
+            if (empty($product->sku)) {
+                $sku = $this->generateSku($product->product_name, (int) $product->id);
+                $product = $this->productRepository->edit($product, ['sku' => $sku]);
+            }
             $this->syncCategories($product, $categoryIds);
             $this->syncTags($product, $tagIds);
             $this->syncVariantGroups($product, $groups);
@@ -140,6 +144,9 @@ class ProductService
                     (int) $product->id
                 );
             }
+            if (empty($product->sku) || (array_key_exists('sku', $data) && empty($data['sku']))) {
+                $data['sku'] = $this->generateSku($data['product_name'] ?? $product->product_name, (int) $product->id);
+            }
             $product = $this->productRepository->edit($product, $data);
             if ($hasCategories) $this->syncCategories($product, $categoryIds);
             if ($hasTags) $this->syncTags($product, $tagIds);
@@ -154,10 +161,7 @@ class ProductService
 
     public function delete($product)
     {
-        return DB::transaction(function () use ($product) {
-            $product->variants()->update(['is_active' => false]);
-            return $this->productRepository->delete($product);
-        });
+        return DB::transaction(fn () => $this->productRepository->delete($product));
     }
 
     public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [])
@@ -309,5 +313,23 @@ class ProductService
     {
         $uniqueIds = array_values(array_unique(array_filter(array_map('intval', $tagIds))));
         $product->tags()->sync($uniqueIds);
+    }
+
+    public function generateSku(string $name, int $id): string
+    {
+        $ascii = Str::ascii($name);
+        $words = array_filter(preg_split('/[^A-Za-z0-9]+/', $ascii));
+        $prefix = '';
+        foreach ($words as $word) {
+            if ($word !== '') {
+                $prefix .= strtoupper(mb_substr($word, 0, 1));
+            }
+        }
+        if (empty($prefix)) {
+            $prefix = 'SP';
+        }
+        $paddedId = str_pad((string) $id, 3, '0', STR_PAD_LEFT);
+
+        return "{$prefix}-{$paddedId}";
     }
 }

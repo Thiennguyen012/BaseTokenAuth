@@ -47,4 +47,47 @@ class ProductSlugTest extends TestCase
             ->assertJsonPath('data.id', $product->id)
             ->assertJsonPath('data.slug', 'ong-nhua-pvc');
     }
+
+    public function test_service_auto_generates_product_sku_from_name_initials_and_id(): void
+    {
+        $service = app(ProductService::class);
+
+        $first = $service->create(['product_name' => 'Áo thun tay dài']);
+        $second = $service->create(['product_name' => 'Hũ nắp vặn']);
+
+        $this->assertSame('ATTD-' . str_pad((string) $first->id, 3, '0', STR_PAD_LEFT), $first->sku);
+        $this->assertSame('HNV-' . str_pad((string) $second->id, 3, '0', STR_PAD_LEFT), $second->sku);
+    }
+
+    public function test_service_respects_custom_sku_when_provided(): void
+    {
+        $service = app(ProductService::class);
+
+        $product = $service->create([
+            'product_name' => 'Áo thun tay dài',
+            'sku' => 'CUSTOM-SKU-999',
+        ]);
+
+        $this->assertSame('CUSTOM-SKU-999', $product->sku);
+    }
+
+    public function test_deleting_a_product_permanently_releases_its_sku(): void
+    {
+        $service = app(ProductService::class);
+        $product = $service->create([
+            'product_name' => 'San pham cu',
+            'sku' => 'REUSABLE-SKU',
+        ]);
+
+        $service->delete($product);
+
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+
+        $replacement = $service->create([
+            'product_name' => 'San pham moi',
+            'sku' => 'REUSABLE-SKU',
+        ]);
+
+        $this->assertSame('REUSABLE-SKU', $replacement->sku);
+    }
 }

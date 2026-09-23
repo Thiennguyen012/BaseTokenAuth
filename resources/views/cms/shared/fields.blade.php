@@ -12,11 +12,11 @@
 @if($field['break_before'] ?? false)
     <div class="w-100" aria-hidden="true"></div>
 @endif
-<div class="form-group {{ $field['column_class'] ?? (in_array($type, ['textarea','richtext','json','key_value','repeatable_values','files','single_file','lines','searchable_select_api','product_variant_groups','variant_options']) ? 'col-12' : 'col-md-6') }} mb-3" data-field-name="{{ $field['name'] }}">
+<div class="form-group {{ $field['column_class'] ?? (in_array($type, ['textarea','richtext','json','key_value','repeatable_values','files','single_file','lines','searchable_select_api','product_variant_groups','variant_options']) ? 'col-12' : 'col-md-6') }} mb-4" data-field-name="{{ $field['name'] }}">
     @if($type === 'checkbox')
-        <div class="custom-control custom-checkbox pt-4">
+        <div class="custom-control custom-checkbox pt-2 pb-2">
             <input type="checkbox" class="custom-control-input" id="{{ $field['name'] }}" name="{{ $field['name'] }}" value="1" @checked($field['default'] ?? false)>
-            <label class="custom-control-label font-weight-bold text-dark" for="{{ $field['name'] }}">{{ $field['label'] }}</label>
+            <label class="custom-control-label font-weight-bold text-dark cursor-pointer" for="{{ $field['name'] }}">{{ $field['label'] }}</label>
         </div>
     @else
         <label class="title-color font-weight-bold mb-2" for="{{ $field['name'] }}">{{ $field['label'] }}</label>

@@ -41,7 +41,7 @@ class UpdatePageConfigRequest extends FormRequest
             'email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'working_hour' => ['sometimes', 'nullable', 'string', 'max:255'],
             'socials' => ['sometimes', 'nullable', 'array'],
-            'socials.*' => ['required', 'url', 'max:2048'],
+            'socials.*' => ['required', 'string', 'max:2048'],
             'favicon' => ['sometimes', 'array', 'max:1'],
             'favicon.*' => ['required', 'image', 'mimes:png,ico,jpeg,jpg,webp', 'max:2048'],
             'logo' => ['sometimes', 'array', 'max:1'],

@@ -19,6 +19,11 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="email", type="string", format="email", nullable=true),
  *     @OA\Property(property="working_hour", type="string", nullable=true),
  *     @OA\Property(property="socials", type="object", nullable=true),
+ *     @OA\Property(property="zalo", type="object", nullable=true,
+ *         @OA\Property(property="phone", type="string", nullable=true),
+ *         @OA\Property(property="url", type="string", nullable=true),
+ *         @OA\Property(property="qr_url", type="string", nullable=true)
+ *     ),
  *     @OA\Property(property="favicon_path", type="string", nullable=true),
  *     @OA\Property(property="logo_path", type="string", nullable=true),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
@@ -29,6 +34,9 @@ class PageConfigResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $socials = $this->socials ?? [];
+        $zaloRaw = $socials['zalo'] ?? $socials['Zalo'] ?? $this->hotline ?? null;
+
         return [
             'id' => $this->id,
             'company_name' => $this->company_name,
@@ -39,13 +47,39 @@ class PageConfigResource extends JsonResource
             'hotline' => $this->hotline,
             'email' => $this->email,
             'working_hour' => $this->working_hour,
-            'socials' => $this->socials ?? [],
+            'socials' => $socials,
+            'zalo' => $this->buildZaloInfo($zaloRaw),
             'favicon_path' => $this->filePath('favicon', $this->favicon_path),
             'logo_path' => $this->filePath('logo', $this->logo_path),
             'favicon' => $this->fileResource('favicon', $this->favicon_path),
             'logo' => $this->fileResource('logo', $this->logo_path),
             'created_at' => optional($this->created_at)->toDateTimeString(),
             'updated_at' => optional($this->updated_at)->toDateTimeString(),
+        ];
+    }
+
+    private function buildZaloInfo(?string $value): ?array
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        $cleanPhone = preg_replace('/[^0-9]/', '', $value);
+        if (empty($cleanPhone)) {
+            return [
+                'phone' => null,
+                'url' => $value,
+                'qr_url' => 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($value),
+            ];
+        }
+
+        $zaloUrl = 'https://zalo.me/' . $cleanPhone;
+        $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($zaloUrl);
+
+        return [
+            'phone' => $cleanPhone,
+            'url' => $zaloUrl,
+            'qr_url' => $qrUrl,
         ];
     }
 
