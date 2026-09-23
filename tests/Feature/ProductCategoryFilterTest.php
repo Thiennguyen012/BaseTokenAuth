@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Categories\Category;
 use App\Models\Products\Product;
+use App\Models\Tags\Tag;
 use App\Services\Product\ProductService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,5 +72,36 @@ class ProductCategoryFilterTest extends TestCase
 
         $this->assertSame(['Featured'], collect($featured->items())->pluck('product_name')->all());
         $this->assertSame(['Normal'], collect($normal->items())->pluck('product_name')->all());
+    }
+
+    public function test_products_can_be_filtered_by_active_variant_price_range(): void
+    {
+        $cheap = Product::query()->create(['product_name' => 'Cheap']);
+        $matched = Product::query()->create(['product_name' => 'Matched']);
+        $inactiveOnly = Product::query()->create(['product_name' => 'Inactive only']);
+        $expensive = Product::query()->create(['product_name' => 'Expensive']);
+
+        $cheap->variants()->create(['sku' => 'CHEAP', 'combination_key' => 'cheap', 'price' => 90, 'is_active' => true]);
+        $matched->variants()->create(['sku' => 'MATCHED', 'combination_key' => 'matched', 'price' => 150, 'is_active' => true]);
+        $inactiveOnly->variants()->create(['sku' => 'INACTIVE', 'combination_key' => 'inactive', 'price' => 150, 'is_active' => false]);
+        $expensive->variants()->create(['sku' => 'EXPENSIVE', 'combination_key' => 'expensive', 'price' => 220, 'is_active' => true]);
+
+        $products = app(ProductService::class)->paginate(10, '', [], 'latest', null, [], [], [], [], [], 100, 200);
+
+        $this->assertSame(['Matched'], collect($products->items())->pluck('product_name')->all());
+    }
+
+    public function test_products_can_be_filtered_by_all_selected_tags(): void
+    {
+        $red = Tag::query()->create(['name' => 'Red', 'slug' => 'red']);
+        $sale = Tag::query()->create(['name' => 'Sale', 'slug' => 'sale']);
+        $matched = Product::query()->create(['product_name' => 'Matched']);
+        $partial = Product::query()->create(['product_name' => 'Partial']);
+        $matched->tags()->attach([$red->id, $sale->id]);
+        $partial->tags()->attach($red->id);
+
+        $products = app(ProductService::class)->paginate(10, '', [], 'latest', null, [], ['red', 'sale']);
+
+        $this->assertSame(['Matched'], collect($products->items())->pluck('product_name')->all());
     }
 }

@@ -31,11 +31,17 @@ class ProductController extends Controller
      *     summary="Danh sách sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
      *     @OA\Parameter(name="sort", in="query", description="latest, price_asc, price_desc, name_asc hoặc name_desc", @OA\Schema(type="string")),
      *     @OA\Parameter(name="is_featured", in="query", description="Lọc theo trạng thái nổi bật", @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="category_ids[]", in="query", description="Lọc theo nhiều danh mục (AND); sản phẩm phải thuộc tất cả danh mục đã chọn", @OA\Schema(type="array", @OA\Items(type="integer"))),
+     *     @OA\Parameter(name="tag_ids[]", in="query", description="Lọc AND theo ID tag", @OA\Schema(type="array", @OA\Items(type="integer"))),
+     *     @OA\Parameter(name="tag_slugs[]", in="query", description="Lọc AND theo slug tag", @OA\Schema(type="array", @OA\Items(type="string"))),
+     *     @OA\Parameter(name="min_price", in="query", description="Giá biến thể đang hoạt động tối thiểu", @OA\Schema(type="number", minimum=0)),
+     *     @OA\Parameter(name="max_price", in="query", description="Giá biến thể đang hoạt động tối đa", @OA\Schema(type="number", minimum=0)),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Thành công"),
      *     @OA\Response(response=401, description="Chưa xác thực")
      * )
@@ -56,14 +62,29 @@ class ProductController extends Controller
         $categorySlugs = [];
         foreach ($rawSlugs as $item) {
             foreach (explode(',', (string) $item) as $s) {
-                if (trim($s) !== '') $categorySlugs[] = trim($s);
+                if (trim($s) !== '') {
+                    $categorySlugs[] = trim($s);
+                }
             }
         }
         $categorySlugs = array_values(array_unique($categorySlugs));
+        $tagIds = $this->integerQueryValues($request, ['tag_id', 'tag_ids']);
+        $tagSlugs = $this->stringQueryValues($request, ['tag', 'tags', 'tag_slug', 'tag_slugs']);
         $sort = $this->normalizeSort((string) $request->query('sort', 'latest'));
         $isFeatured = $request->has('is_featured') ? $request->boolean('is_featured') : null;
+        $prices = $request->validate([
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                ...($request->filled('min_price') ? ['gte:min_price'] : []),
+            ],
+        ]);
+        $minPrice = isset($prices['min_price']) ? (float) $prices['min_price'] : null;
+        $maxPrice = isset($prices['max_price']) ? (float) $prices['max_price'] : null;
 
-        $products = $this->productService->paginate($perPage, $search, $categoryIds, $sort, $isFeatured, $categorySlugs);
+        $products = $this->productService->paginate($perPage, $search, $categoryIds, $sort, $isFeatured, $categorySlugs, $tagSlugs, $tagIds, [], [], $minPrice, $maxPrice);
 
         return response()->json([
             'status_code' => Response::HTTP_OK,
@@ -85,21 +106,55 @@ class ProductController extends Controller
             : 'latest';
     }
 
+    private function integerQueryValues(Request $request, array $keys): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map('intval', $this->queryValues($request, $keys)),
+            fn (int $value) => $value > 0,
+        )));
+    }
+
+    private function stringQueryValues(Request $request, array $keys): array
+    {
+        return array_values(array_unique($this->queryValues($request, $keys)));
+    }
+
+    private function queryValues(Request $request, array $keys): array
+    {
+        $values = [];
+        foreach ($keys as $key) {
+            foreach ((array) $request->query($key, []) as $item) {
+                foreach (explode(',', (string) $item) as $value) {
+                    if (trim($value) !== '') {
+                        $values[] = trim($value);
+                    }
+                }
+            }
+        }
+
+        return $values;
+    }
+
     /**
      * @OA\Post(
      *     path="/admin/api/products",
      *     summary="Tạo sản phẩm kèm ảnh",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\RequestBody(required=true, @OA\MediaType(
      *         mediaType="multipart/form-data",
+     *
      *         @OA\Schema(ref="#/components/schemas/StoreProductRequest")
      *     )),
+     *
      *     @OA\Response(response=201, description="Đã tạo", @OA\JsonContent(
+     *
      *         @OA\Property(property="status_code", type="integer", example=201),
      *         @OA\Property(property="message", type="string"),
      *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
      *     )),
+     *
      *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
      * )
      */
@@ -124,12 +179,16 @@ class ProductController extends Controller
      *     summary="Chi tiết sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Thành công", @OA\JsonContent(
+     *
      *         @OA\Property(property="status_code", type="integer", example=200),
      *         @OA\Property(property="message", type="string"),
      *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
      *     )),
+     *
      *     @OA\Response(response=404, description="Không tồn tại")
      * )
      */
@@ -137,7 +196,7 @@ class ProductController extends Controller
     {
         $product = $this->productService->find($id);
 
-        if (!$product) {
+        if (! $product) {
             return $this->errorResponse(
                 __('messages.common.not_found', ['entity' => __('messages.entities.product')]),
                 Response::HTTP_NOT_FOUND
@@ -158,16 +217,22 @@ class ProductController extends Controller
      *     description="Gửi multipart/form-data bằng POST và đặt _method=PUT.",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(required=true, @OA\MediaType(
      *         mediaType="multipart/form-data",
+     *
      *         @OA\Schema(ref="#/components/schemas/UpdateProductRequest")
      *     )),
+     *
      *     @OA\Response(response=200, description="Đã cập nhật", @OA\JsonContent(
+     *
      *         @OA\Property(property="status_code", type="integer", example=200),
      *         @OA\Property(property="message", type="string"),
      *         @OA\Property(property="data", ref="#/components/schemas/ProductResource")
      *     )),
+     *
      *     @OA\Response(response=404, description="Không tồn tại"),
      *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
      * )
@@ -177,7 +242,7 @@ class ProductController extends Controller
         try {
             $product = $this->productService->find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return $this->errorResponse(
                     __('messages.common.not_found', ['entity' => __('messages.entities.product')]),
                     Response::HTTP_NOT_FOUND
@@ -202,7 +267,9 @@ class ProductController extends Controller
      *     summary="Xóa sản phẩm",
      *     tags={"Products"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Đã xóa"),
      *     @OA\Response(response=404, description="Không tồn tại")
      * )
@@ -212,7 +279,7 @@ class ProductController extends Controller
         try {
             $product = $this->productService->find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return $this->errorResponse(
                     __('messages.common.not_found', ['entity' => __('messages.entities.product')]),
                     Response::HTTP_NOT_FOUND
@@ -235,8 +302,10 @@ class ProductController extends Controller
      *     path="/admin/api/products/{id}/variant-groups/{configurationId}",
      *     summary="Gỡ nhóm biến thể khỏi sản phẩm",
      *     tags={"Products"}, security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="configurationId", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\Response(response=200, description="Đã gỡ nhóm"),
      *     @OA\Response(response=404, description="Không tồn tại"),
      *     @OA\Response(response=422, description="Đang được sử dụng")
@@ -246,7 +315,9 @@ class ProductController extends Controller
     {
         try {
             $product = $this->productService->find($id);
-            if (!$product) return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+            if (! $product) {
+                return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+            }
             $this->productService->removeVariantGroup($product, (int) $configurationId);
 
             return response()->json(['status_code' => Response::HTTP_OK, 'message' => 'Đã gỡ nhóm biến thể khỏi sản phẩm.']);
@@ -260,11 +331,15 @@ class ProductController extends Controller
      *     path="/admin/api/products/{id}/variant-groups/{configurationId}",
      *     summary="Cập nhật cấu hình nhóm biến thể của sản phẩm",
      *     tags={"Products"}, security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="configurationId", in="path", required=true, @OA\Schema(type="integer")),
+     *
      *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *
      *         @OA\Property(property="is_required", type="boolean")
      *     )),
+     *
      *     @OA\Response(response=200, description="Đã cập nhật"),
      *     @OA\Response(response=404, description="Không tồn tại"),
      *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
@@ -274,7 +349,9 @@ class ProductController extends Controller
     {
         $data = $request->validate(['is_required' => ['required', 'boolean']]);
         $product = $this->productService->find($id);
-        if (!$product) return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+        if (! $product) {
+            return $this->errorResponse('Sản phẩm không tồn tại.', Response::HTTP_NOT_FOUND);
+        }
 
         try {
             $this->productService->updateVariantGroup($product, (int) $configurationId, $data);

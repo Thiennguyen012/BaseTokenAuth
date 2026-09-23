@@ -17,16 +17,16 @@ class ProductService
         $this->productRepository = $productRepository;
     }
 
-    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [])
+    public function paginate($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [], ?float $minPrice = null, ?float $maxPrice = null)
     {
         $where = [];
 
         if ($search) {
             $where['orWhere'] = [
-                'product_name' => ['product_name', 'like', '%' . $search . '%'],
-                'sku' => ['sku', 'like', '%' . $search . '%'],
-                'description' => ['description', 'like', '%' . $search . '%'],
-                'slug' => ['slug', 'like', '%' . $search . '%'],
+                'product_name' => ['product_name', 'like', '%'.$search.'%'],
+                'sku' => ['sku', 'like', '%'.$search.'%'],
+                'description' => ['description', 'like', '%'.$search.'%'],
+                'slug' => ['slug', 'like', '%'.$search.'%'],
             ];
         }
 
@@ -70,7 +70,7 @@ class ProductService
             $where['is_featured'] = $isFeatured;
         }
 
-        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit, $sort);
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants.options.productVariantGroup.group'], $limit, $sort, $minPrice, $maxPrice);
     }
 
     public function getAll($search = '')
@@ -80,13 +80,13 @@ class ProductService
 
         if ($search) {
             $where['orWhere'] = [
-                'product_name' => ['product_name', 'like', '%' . $search . '%'],
-                'sku' => ['sku', 'like', '%' . $search . '%'],
+                'product_name' => ['product_name', 'like', '%'.$search.'%'],
+                'sku' => ['sku', 'like', '%'.$search.'%'],
             ];
         }
 
         if ($search) {
-            $where['orWhere']['slug'] = ['slug', 'like', '%' . $search . '%'];
+            $where['orWhere']['slug'] = ['slug', 'like', '%'.$search.'%'];
         }
 
         return $this->productRepository->get($where, $orderBy, ['*']);
@@ -148,8 +148,12 @@ class ProductService
                 $data['sku'] = $this->generateSku($data['product_name'] ?? $product->product_name, (int) $product->id);
             }
             $product = $this->productRepository->edit($product, $data);
-            if ($hasCategories) $this->syncCategories($product, $categoryIds);
-            if ($hasTags) $this->syncTags($product, $tagIds);
+            if ($hasCategories) {
+                $this->syncCategories($product, $categoryIds);
+            }
+            if ($hasTags) {
+                $this->syncTags($product, $tagIds);
+            }
             if ($hasGroups) {
                 $this->syncVariantGroups($product, $groups);
             }
@@ -164,15 +168,15 @@ class ProductService
         return DB::transaction(fn () => $this->productRepository->delete($product));
     }
 
-    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [])
+    public function paginatePublic($limit = 10, $search = '', array $categoryIds = [], string $sort = 'latest', ?bool $isFeatured = null, array $categorySlugs = [], array $tagSlugs = [], array $tagIds = [], array $tagGroupIds = [], array $tagGroupCodes = [], ?float $minPrice = null, ?float $maxPrice = null)
     {
         $where = ['is_active' => true];
         if ($search) {
             $where['orWhere'] = [
-                'product_name' => ['product_name', 'like', '%' . $search . '%'],
-                'slug' => ['slug', 'like', '%' . $search . '%'],
-                'sku' => ['sku', 'like', '%' . $search . '%'],
-                'description' => ['description', 'like', '%' . $search . '%'],
+                'product_name' => ['product_name', 'like', '%'.$search.'%'],
+                'slug' => ['slug', 'like', '%'.$search.'%'],
+                'sku' => ['sku', 'like', '%'.$search.'%'],
+                'description' => ['description', 'like', '%'.$search.'%'],
             ];
         }
         foreach ($categoryIds as $categoryId) {
@@ -196,17 +200,58 @@ class ProductService
         if ($isFeatured !== null) {
             $where['is_featured'] = $isFeatured;
         }
-        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit, $sort);
+
+        return $this->productRepository->paginateListing($where, ['files', 'categories', 'tags.tagGroup', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group'], $limit, $sort, $minPrice, $maxPrice);
     }
 
     public function findPublic($id)
     {
         $identity = ctype_digit((string) $id) ? ['id' => (int) $id] : ['slug' => $id];
 
-        return $this->productRepository->first(
+        $product = $this->productRepository->first(
             $identity + ['is_active' => true], [], ['*'],
-            ['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.options.productVariantGroup.group']
+            ['files', 'categories', 'tags', 'variantGroupConfigurations.group', 'variantGroupConfigurations.options', 'variants' => fn ($query) => $query->where('is_active', true), 'variants.files', 'variants.options.productVariantGroup.group']
         );
+
+        if ($product) {
+            $product->variants->each(fn ($variant) => $this->attachFallbackImages($variant, $product->files));
+        }
+
+        return $product;
+    }
+
+    public function findPublicVariant($id, array $optionIds)
+    {
+        $identity = ctype_digit((string) $id) ? ['id' => (int) $id] : ['slug' => $id];
+        $product = $this->productRepository->first(
+            $identity + ['is_active' => true],
+            [],
+            ['*'],
+            ['files']
+        );
+
+        if (! $product) {
+            return null;
+        }
+
+        $normalizedOptionIds = collect($optionIds)
+            ->map(fn ($optionId) => (int) $optionId)
+            ->unique()
+            ->sort()
+            ->values();
+        $combinationKey = hash('sha256', $normalizedOptionIds->implode(':'));
+
+        $variant = $product->variants()
+            ->where('is_active', true)
+            ->where('combination_key', $combinationKey)
+            ->with(['files', 'options.productVariantGroup.group'])
+            ->first();
+
+        if ($variant) {
+            $this->attachFallbackImages($variant, $product->files);
+        }
+
+        return $variant;
     }
 
     public function removeVariantGroup($product, int $configurationId): void
@@ -236,7 +281,7 @@ class ProductService
             );
             $configurationIds[] = $configuration->id;
 
-            if (array_key_exists('options', $group) || !empty($group['options_present'])) {
+            if (array_key_exists('options', $group) || ! empty($group['options_present'])) {
                 $keptOptionIds = [];
                 foreach (($group['options'] ?? []) as $option) {
                     $savedOption = $configuration->options()->updateOrCreate(
@@ -288,7 +333,7 @@ class ProductService
 
         $this->fileService->uploadMany($images, $product, [
             'disk' => 'public',
-            'directory' => 'products/' . $product->id,
+            'directory' => 'products/'.$product->id,
             'type' => 'image',
         ]);
     }
@@ -303,7 +348,7 @@ class ProductService
             ->where('slug', $slug)
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists()) {
-            $slug = $base . '-' . $suffix++;
+            $slug = $base.'-'.$suffix++;
         }
 
         return $slug;
@@ -313,6 +358,11 @@ class ProductService
     {
         $uniqueIds = array_values(array_unique(array_filter(array_map('intval', $tagIds))));
         $product->tags()->sync($uniqueIds);
+    }
+
+    private function attachFallbackImages($variant, $productFiles): void
+    {
+        $variant->setRelation('fallbackFiles', $productFiles);
     }
 
     public function generateSku(string $name, int $id): string

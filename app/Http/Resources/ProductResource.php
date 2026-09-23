@@ -35,6 +35,22 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $imageFiles = null;
+        if ($this->relationLoaded('files')) {
+            $imageFiles = $this->files->where('type', 'image')->values();
+
+            if ($this->relationLoaded('variants')) {
+                $variantImages = $this->variants
+                    ->filter(fn ($variant) => $variant->relationLoaded('files'))
+                    ->flatMap(fn ($variant) => $variant->files->where('type', 'image'));
+
+                $imageFiles = $imageFiles
+                    ->concat($variantImages)
+                    ->unique('id')
+                    ->values();
+            }
+        }
+
         return [
             'id' => $this->id,
             'product_name' => $this->product_name,
@@ -48,15 +64,8 @@ class ProductResource extends JsonResource
             'category_names' => $this->whenLoaded('categories', fn () => $this->categories->pluck('category_name')->implode(', ')),
             'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)),
             'tag_names' => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')->implode(', ')),
-            'images' => $this->whenLoaded(
-                'files',
-                fn () => FileResource::collection($this->files->where('type', 'image')->values())
-            ),
-            'first_image' => $this->whenLoaded('files', function () {
-                $image = $this->files->firstWhere('type', 'image');
-
-                return $image ? new FileResource($image) : null;
-            }),
+            'images' => $this->when($imageFiles !== null, fn () => FileResource::collection($imageFiles)),
+            'first_image' => $this->when($imageFiles !== null, fn () => ($image = $imageFiles->first()) ? new FileResource($image) : null),
             'variant_groups' => $this->whenLoaded(
                 'variantGroupConfigurations',
                 fn () => ProductVariantGroupResource::collection($this->variantGroupConfigurations)

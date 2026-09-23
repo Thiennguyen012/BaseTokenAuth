@@ -13,14 +13,29 @@ class ProductRepository extends BaseRepository implements ProductInterface
         return Product::class;
     }
 
-    public function paginateListing(array $where, array $with, int $limit, string $sort = 'latest'): LengthAwarePaginator
-    {
+    public function paginateListing(
+        array $where,
+        array $with,
+        int $limit,
+        string $sort = 'latest',
+        ?float $minPrice = null,
+        ?float $maxPrice = null,
+    ): LengthAwarePaginator {
         $query = $this->query($where, [], ['products.*'], $with)
             ->withMin([
                 'variants as min_price' => fn ($query) => $query
                     ->where('is_active', true)
                     ->whereNotNull('price'),
             ], 'price');
+
+        if ($minPrice !== null || $maxPrice !== null) {
+            $query->whereHas('variants', function ($query) use ($minPrice, $maxPrice): void {
+                $query->where('is_active', true)
+                    ->whereNotNull('price')
+                    ->when($minPrice !== null, fn ($query) => $query->where('price', '>=', $minPrice))
+                    ->when($maxPrice !== null, fn ($query) => $query->where('price', '<=', $maxPrice));
+            });
+        }
 
         match ($sort) {
             'price_asc' => $query->orderByRaw('min_price IS NULL ASC')->orderBy('min_price'),

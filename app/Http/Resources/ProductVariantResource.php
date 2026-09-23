@@ -19,6 +19,8 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="is_contact_price", type="boolean"),
  *     @OA\Property(property="images", type="array", @OA\Items(ref="#/components/schemas/FileResource")),
  *     @OA\Property(property="first_image", nullable=true, ref="#/components/schemas/FileResource"),
+ *     @OA\Property(property="image_source", type="string", nullable=true, enum={"variant", "product"}),
+ *     @OA\Property(property="uses_product_images", type="boolean"),
  *     @OA\Property(property="options", type="array", @OA\Items(ref="#/components/schemas/VariantOptionResource")),
  *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true),
  *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
@@ -28,6 +30,19 @@ class ProductVariantResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $imageFiles = null;
+        $imageSource = null;
+
+        if ($this->relationLoaded('files')) {
+            $imageFiles = $this->files->where('type', 'image')->values();
+            if ($imageFiles->isNotEmpty()) {
+                $imageSource = 'variant';
+            } elseif ($this->relationLoaded('fallbackFiles')) {
+                $imageFiles = $this->fallbackFiles->where('type', 'image')->values();
+                $imageSource = $imageFiles->isNotEmpty() ? 'product' : null;
+            }
+        }
+
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
@@ -37,15 +52,10 @@ class ProductVariantResource extends JsonResource
             'stock' => $this->stock,
             'is_active' => (bool) $this->is_active,
             'is_contact_price' => (bool) $this->is_contact_price,
-            'images' => $this->whenLoaded(
-                'files',
-                fn () => FileResource::collection($this->files->where('type', 'image')->values())
-            ),
-            'first_image' => $this->whenLoaded('files', function () {
-                $image = $this->files->firstWhere('type', 'image');
-
-                return $image ? new FileResource($image) : null;
-            }),
+            'images' => $this->when($imageFiles !== null, fn () => FileResource::collection($imageFiles)),
+            'first_image' => $this->when($imageFiles !== null, fn () => ($image = $imageFiles->first()) ? new FileResource($image) : null),
+            'image_source' => $this->when($imageFiles !== null, $imageSource),
+            'uses_product_images' => $this->when($imageFiles !== null, $imageSource === 'product'),
             'options' => $this->whenLoaded('options', fn () => VariantOptionResource::collection($this->options)),
             'option_names' => $this->whenLoaded('options', fn () => $this->options->map(fn ($option) => ($option->productVariantGroup?->group?->group_name ? $option->productVariantGroup->group->group_name . ': ' : '') . $option->option_name)->implode(', ')),
             'created_at' => optional($this->created_at)->toDateTimeString(),

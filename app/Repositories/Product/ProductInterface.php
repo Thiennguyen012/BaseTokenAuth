@@ -7,5 +7,12 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface ProductInterface extends BaseInterface
 {
-    public function paginateListing(array $where, array $with, int $limit, string $sort = 'latest'): LengthAwarePaginator;
+    public function paginateListing(
+        array $where,
+        array $with,
+        int $limit,
+        string $sort = 'latest',
+        ?float $minPrice = null,
+        ?float $maxPrice = null,
+    ): LengthAwarePaginator;
 }

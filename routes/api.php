@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\PublicSite\LandingController;
 
 Route::prefix('api')->group(function () {
     Route::get('/products', [LandingController::class, 'products']);
+    Route::get('/products/{id}/variant', [LandingController::class, 'productVariant']);
     Route::get('/products/{id}', [LandingController::class, 'product']);
     Route::get('/categories', [LandingController::class, 'categories']);
     Route::get('/categories/{slug}', [LandingController::class, 'category']);

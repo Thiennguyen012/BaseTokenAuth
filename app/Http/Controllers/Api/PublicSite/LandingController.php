@@ -8,13 +8,14 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\PageConfigResource;
 use App\Http\Resources\PageContentResource;
 use App\Http\Resources\ProductResource;
+use App\Http\Resources\ProductVariantResource;
+use App\Http\Resources\TagGroupResource;
 use App\Services\Category\CategoryService;
-use App\Services\Tag\TagService;
 use App\Services\PageConfig\PageConfigService;
 use App\Services\PageContent\PageContentService;
 use App\Services\Product\ProductService;
+use App\Services\Tag\TagService;
 use App\Services\TagGroup\TagGroupService;
-use App\Http\Resources\TagGroupResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -31,7 +32,7 @@ class LandingController extends Controller
         protected PageConfigService $pageConfig,
     ) {}
 
-    /** @OA\Get(path="/api/products", summary="Danh sách sản phẩm công khai đang hoạt động", tags={"Public"}, @OA\Parameter(name="search", in="query", @OA\Schema(type="string")), @OA\Parameter(name="category_ids[]", in="query", description="Lọc AND theo danh mục", @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Parameter(name="sort", in="query", description="latest, price_asc, price_desc, name_asc hoặc name_desc", @OA\Schema(type="string")), @OA\Parameter(name="is_featured", in="query", @OA\Schema(type="boolean")), @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")), @OA\Response(response=200, description="Thành công")) */
+    /** @OA\Get(path="/api/products", summary="Danh sách sản phẩm công khai đang hoạt động", tags={"Public"}, @OA\Parameter(name="search", in="query", @OA\Schema(type="string")), @OA\Parameter(name="category_ids[]", in="query", description="Lọc AND theo danh mục", @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Parameter(name="tag_ids[]", in="query", description="Lọc AND theo ID tag", @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Parameter(name="tag_slugs[]", in="query", description="Lọc AND theo slug tag", @OA\Schema(type="array", @OA\Items(type="string"))), @OA\Parameter(name="min_price", in="query", @OA\Schema(type="number", minimum=0)), @OA\Parameter(name="max_price", in="query", @OA\Schema(type="number", minimum=0)), @OA\Parameter(name="sort", in="query", description="latest, price_asc, price_desc, name_asc hoặc name_desc", @OA\Schema(type="string")), @OA\Parameter(name="is_featured", in="query", @OA\Schema(type="boolean")), @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")), @OA\Response(response=200, description="Thành công")) */
     public function products(Request $request): JsonResponse
     {
         $limitParam = $request->query('so-luong') ?? $request->query('per_page', Helpers::LIMIT_PER_PAGE);
@@ -58,7 +59,9 @@ class LandingController extends Controller
         $categorySlugs = [];
         foreach ($rawSlugs as $item) {
             foreach (explode(',', (string) $item) as $s) {
-                if (trim($s) !== '') $categorySlugs[] = trim($s);
+                if (trim($s) !== '') {
+                    $categorySlugs[] = trim($s);
+                }
             }
         }
         $categorySlugs = array_values(array_unique($categorySlugs));
@@ -72,7 +75,9 @@ class LandingController extends Controller
         $tagSlugs = [];
         foreach ($rawTagSlugs as $item) {
             foreach (explode(',', (string) $item) as $s) {
-                if (trim($s) !== '') $tagSlugs[] = trim($s);
+                if (trim($s) !== '') {
+                    $tagSlugs[] = trim($s);
+                }
             }
         }
         $tagSlugs = array_values(array_unique($tagSlugs));
@@ -86,7 +91,9 @@ class LandingController extends Controller
         $tagIds = [];
         foreach ($rawTagIds as $item) {
             foreach (explode(',', (string) $item) as $id) {
-                if (ctype_digit(trim($id))) $tagIds[] = (int) trim($id);
+                if (ctype_digit(trim($id))) {
+                    $tagIds[] = (int) trim($id);
+                }
             }
         }
         $tagIds = array_values(array_unique($tagIds));
@@ -100,7 +107,9 @@ class LandingController extends Controller
         $tagGroupIds = [];
         foreach ($rawGroupIds as $item) {
             foreach (explode(',', (string) $item) as $id) {
-                if (ctype_digit(trim($id))) $tagGroupIds[] = (int) trim($id);
+                if (ctype_digit(trim($id))) {
+                    $tagGroupIds[] = (int) trim($id);
+                }
             }
         }
         $tagGroupIds = array_values(array_unique($tagGroupIds));
@@ -114,12 +123,27 @@ class LandingController extends Controller
         $tagGroupCodes = [];
         foreach ($rawGroupCodes as $item) {
             foreach (explode(',', (string) $item) as $code) {
-                if (trim($code) !== '') $tagGroupCodes[] = trim($code);
+                if (trim($code) !== '') {
+                    $tagGroupCodes[] = trim($code);
+                }
             }
         }
         $tagGroupCodes = array_values(array_unique($tagGroupCodes));
 
-        $items = $this->products->paginatePublic($limit, $search, $categoryIds, $sort, $isFeatured, $categorySlugs, $tagSlugs, $tagIds, $tagGroupIds, $tagGroupCodes);
+        $prices = $request->validate([
+            'min_price' => ['nullable', 'numeric', 'min:0'],
+            'max_price' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                ...($request->filled('min_price') ? ['gte:min_price'] : []),
+            ],
+        ]);
+        $minPrice = isset($prices['min_price']) ? (float) $prices['min_price'] : null;
+        $maxPrice = isset($prices['max_price']) ? (float) $prices['max_price'] : null;
+
+        $items = $this->products->paginatePublic($limit, $search, $categoryIds, $sort, $isFeatured, $categorySlugs, $tagSlugs, $tagIds, $tagGroupIds, $tagGroupCodes, $minPrice, $maxPrice);
+
         return $this->paginated($items, ProductResource::collection($items->getCollection()), 'Lấy danh sách sản phẩm thành công');
     }
 
@@ -127,8 +151,26 @@ class LandingController extends Controller
     public function product(string $id): JsonResponse
     {
         $item = $this->products->findPublic($id);
-        abort_if(!$item, 404, 'Không tìm thấy sản phẩm');
+        abort_if(! $item, 404, 'Không tìm thấy sản phẩm');
+
         return response()->json(['status_code' => 200, 'message' => 'Lấy sản phẩm thành công', 'data' => new ProductResource($item)]);
+    }
+
+    /** @OA\Get(path="/api/products/{id}/variant", summary="Lấy biến thể theo tổ hợp lựa chọn", tags={"Public"}, @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")), @OA\Parameter(name="option_ids[]", in="query", required=true, @OA\Schema(type="array", @OA\Items(type="integer"))), @OA\Response(response=200, description="Thành công"), @OA\Response(response=404, description="Không tìm thấy biến thể"), @OA\Response(response=422, description="Dữ liệu không hợp lệ")) */
+    public function productVariant(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'option_ids' => ['required', 'array', 'min:1'],
+            'option_ids.*' => ['required', 'integer', 'distinct', 'exists:variant_options,id'],
+        ]);
+        $variant = $this->products->findPublicVariant($id, $validated['option_ids']);
+        abort_if(! $variant, 404, 'Không tìm thấy biến thể phù hợp');
+
+        return response()->json([
+            'status_code' => Response::HTTP_OK,
+            'message' => 'Lấy biến thể sản phẩm thành công',
+            'data' => new ProductVariantResource($variant),
+        ]);
     }
 
     /** @OA\Get(path="/api/categories", summary="Danh sách danh mục công khai", tags={"Public"}, @OA\Response(response=200, description="Thành công")) */
@@ -136,6 +178,7 @@ class LandingController extends Controller
     {
         $limit = max(1, min((int) $request->query('per_page', Helpers::LIMIT_PER_PAGE), Helpers::LIMIT_PER_PAGE));
         $items = $this->categories->paginate($limit, (string) $request->query('search', ''));
+
         return $this->paginated($items, CategoryResource::collection($items->getCollection()), 'Lấy danh sách danh mục thành công');
     }
 
@@ -143,7 +186,8 @@ class LandingController extends Controller
     public function category(string $slug): JsonResponse
     {
         $item = $this->categories->find($slug);
-        abort_if(!$item, 404, 'Không tìm thấy danh mục');
+        abort_if(! $item, 404, 'Không tìm thấy danh mục');
+
         return response()->json(['status_code' => 200, 'message' => 'Lấy chi tiết danh mục thành công', 'data' => new CategoryResource($item)]);
     }
 
@@ -151,12 +195,14 @@ class LandingController extends Controller
     {
         $limit = max(1, min((int) $request->query('per_page', Helpers::LIMIT_PER_PAGE), Helpers::LIMIT_PER_PAGE));
         $items = $this->tags->paginate($limit, (string) $request->query('search', ''));
+
         return $this->paginated($items, TagResource::collection($items->getCollection()), 'Lấy danh sách nhãn sản phẩm thành công');
     }
 
     public function tagGroups(Request $request): JsonResponse
     {
         $items = $this->tagGroups->getAll((string) $request->query('search', ''));
+
         return response()->json([
             'status_code' => Response::HTTP_OK,
             'message' => 'Lấy danh sách nhóm nhãn thành công',
@@ -167,7 +213,8 @@ class LandingController extends Controller
     public function tag(string $slug): JsonResponse
     {
         $item = $this->tags->find($slug);
-        abort_if(!$item, 404, 'Không tìm thấy nhãn sản phẩm');
+        abort_if(! $item, 404, 'Không tìm thấy nhãn sản phẩm');
+
         return response()->json(['status_code' => 200, 'message' => 'Lấy chi tiết nhãn sản phẩm thành công', 'data' => new TagResource($item)]);
     }
 
@@ -176,6 +223,7 @@ class LandingController extends Controller
     {
         $limit = max(1, min((int) $request->query('per_page', Helpers::LIMIT_PER_PAGE), Helpers::LIMIT_PER_PAGE));
         $items = $this->pages->paginate($limit, (string) $request->query('search', ''));
+
         return $this->paginated($items, PageContentResource::collection($items->getCollection()), 'Lấy nội dung trang thành công');
     }
 
@@ -183,7 +231,8 @@ class LandingController extends Controller
     public function page(string $slug): JsonResponse
     {
         $item = $this->pages->findBySlug($slug) ?? $this->pages->find($slug);
-        abort_if(!$item, 404, 'Không tìm thấy nội dung trang');
+        abort_if(! $item, 404, 'Không tìm thấy nội dung trang');
+
         return response()->json(['status_code' => 200, 'message' => 'Lấy nội dung trang thành công', 'data' => new PageContentResource($item)]);
     }
 
